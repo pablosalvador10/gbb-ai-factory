@@ -1,5 +1,5 @@
 PYTHON_INTERPRETER = python3
-CONDA_ENV ?= my-template-environment
+CONDA_ENV ?= chat-with-your-data
 export PYTHONPATH=$(PWD):$PYTHONPATH;
 
 # Target for setting up pre-commit and pre-push hooks
@@ -61,6 +61,9 @@ GREEN = \033[0;32m
 define log_section
 	@printf "\n${GREEN}--> $(1)${NC}\n\n"
 endef
+
+run_streamlit:
+	streamlit run src/app/ElearningAI.py
 
 create_conda_env:
 	@echo "Creating conda environment"
