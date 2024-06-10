@@ -1,5 +1,5 @@
 PYTHON_INTERPRETER = python3
-CONDA_ENV ?= chat-with-your-data
+CONDA_ENV ?= elearning-ai
 export PYTHONPATH=$(PWD):$PYTHONPATH;
 
 # Target for setting up pre-commit and pre-push hooks
