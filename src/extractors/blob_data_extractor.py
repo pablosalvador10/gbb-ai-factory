@@ -222,3 +222,33 @@ class AzureBlobDataExtractor:
         except Exception as e:
             logger.error(f"Failed to upload file {local_file_path} to blob storage: {e}")
             raise
+
+
+    def upload_files_from_bytes_to_blob(self, file_bytes: bytes, blob_name: str) -> str:
+        """
+        Uploads a file from a byte stream to Azure Blob Storage and returns the blob URL.
+
+        Args:
+            file_bytes (bytes): Byte stream of the file to be uploaded.
+            blob_name (str): The name of the blob in Azure Blob Storage where the file will be uploaded.
+
+        Returns:
+            str: The URL of the uploaded blob.
+
+        Raises:
+            Exception: If there's an error during the upload process.
+        """
+        try:
+            # Create a blob client using the specified blob name
+            blob_client = self.blob_service_client.get_blob_client(container=self.container_name, blob=blob_name)
+
+            # Upload the file directly from its byte stream
+            blob_client.upload_blob(file_bytes, overwrite=True)
+            logger.info(f"File uploaded to blob storage as {blob_name}.")
+
+            # Construct and return the blob URL
+            blob_url = f"https://{self.blob_service_client.account_name}.blob.core.windows.net/{self.container_name}/{blob_name}"
+            return blob_url
+        except Exception as e:
+            logger.error(f"Failed to upload file to blob storage: {e}")
+            raise

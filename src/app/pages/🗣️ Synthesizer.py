@@ -8,6 +8,7 @@ from src.ocr.document_intelligence import AzureDocumentIntelligenceManager
 from src.utilsfunc import save_uploaded_file
 from src.app.outputformatting import markdown_to_docx
 import json
+from datetime import datetime 
 import tiktoken
 import os
 
@@ -159,15 +160,24 @@ def download_ai_response_as_docx_or_pdf():
         logger.error(f"Error generating {file_format} file: {e}")
         st.error(f"❌ Error generating {file_format} file. Please check the logs for more details.")
 
-
-# Function to process a single file
 async def process_single_file(semaphore, uploaded_file):
     async with semaphore:
-        file_path = save_uploaded_file(uploaded_file)
         try:
-            blob_name = os.path.basename(file_path)
+            # Generate the blob name based on the current date and file name
+            date_str = datetime.now().strftime("%Y%m%d")
+            blob_name = f"uploads/{date_str}/{uploaded_file.name}"
+
+            # Upload the file directly from its bytes
             blob_url = await asyncio.to_thread(
-                st.session_state.blob_data_extractor_manager.upload_file_to_blob, file_path, blob_name)
+                st.session_state.blob_data_extractor_manager.upload_files_from_bytes_to_blob, 
+                uploaded_file.getvalue(),  # Use getvalue to fetch byte stream
+                blob_name
+            )
+
+            if not blob_url:
+                raise ValueError(f"Error processing file. Blob URL is not valid.")
+            
+            # Analyze the document using Azure Document Intelligence
             result_ocr = await asyncio.to_thread(
                 st.session_state.document_intelligence_manager.analyze_document,
                 document_input=blob_url,
@@ -175,8 +185,10 @@ async def process_single_file(semaphore, uploaded_file):
                 output_format="markdown",
                 features=["OCR_HIGH_RESOLUTION"]
             )
+            
             st.toast(f"Document '{uploaded_file.name}' has been successfully processed.", icon="😎")
             return result_ocr.content
+
         except Exception as e:
             logger.error(f"Error processing file {uploaded_file.name}: {e}")
             st.toast(f"Error processing file {uploaded_file.name}. Please check the logs for more details.")
