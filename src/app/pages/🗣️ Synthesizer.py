@@ -1,11 +1,15 @@
 import streamlit as st
 import dotenv
+import asyncio
 from utils.ml_logging import get_logger
 from src.extractors.blob_data_extractor import AzureBlobDataExtractor
 from src.aoai.azure_openai import AzureOpenAIManager
 from src.ocr.document_intelligence import AzureDocumentIntelligenceManager
 from src.utilsfunc import save_uploaded_file
 from src.app.outputformatting import markdown_to_docx
+import json
+import tiktoken
+import os
 
 # Load environment variables
 dotenv.load_dotenv(".env")
@@ -23,14 +27,37 @@ if 'chat_history' not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "Hey, this is your AI assistant. Please look at the AI request submit and let's work together to make your content shine!"}]
 
-# Initialize managers if they don't exist in session state
-for manager_name, manager in [
-    ("document_intelligence_manager", AzureDocumentIntelligenceManager()),
-    ("blob_data_extractor_manager", AzureBlobDataExtractor(container_name="ocrtest2")),
-    ("azure_openai_manager", AzureOpenAIManager())
-]:
-    if manager_name not in st.session_state:
-        st.session_state[manager_name] = manager
+# Accessing the session state variables
+azure_openai_key = st.session_state.get('AZURE_OPENAI_KEY')
+azure_aoai_chat_model_name_deployment_id = st.session_state.get('AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID')
+azure_openai_api_endpoint = st.session_state.get('AZURE_OPENAI_API_ENDPOINT')
+azure_openai_api_version = st.session_state.get('AZURE_OPENAI_API_VERSION')
+azure_blob_storage = st.session_state.get('AZURE_BLOB_CONTAINER_NAME')
+azure_document_intelligence_endpoint = st.session_state.get('AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT')
+azure_document_intelligence_key = st.session_state.get('AZURE_DOCUMENT_INTELLIGENCE_KEY')
+azure_storage_connection_string = st.session_state.get('AZURE_STORAGE_CONNECTION_STRING')
+
+# Initialize managers if not already initialized
+try:
+    if 'document_intelligence_manager' not in st.session_state:
+        st.session_state.document_intelligence_manager = AzureDocumentIntelligenceManager(
+            azure_endpoint=azure_document_intelligence_endpoint, 
+            azure_key=azure_document_intelligence_key
+        )
+    if 'blob_data_extractor_manager' not in st.session_state:
+        st.session_state.blob_data_extractor_manager = AzureBlobDataExtractor(
+            connect_str=azure_storage_connection_string, 
+            container_name=azure_blob_storage
+        )
+    if 'azure_openai_manager' not in st.session_state:
+        st.session_state.azure_openai_manager = AzureOpenAIManager(
+            api_key=azure_openai_key,
+            azure_endpoint=azure_openai_api_endpoint,
+            api_version=azure_openai_api_version,
+            chat_model_name=azure_aoai_chat_model_name_deployment_id
+        )
+except Exception as e:
+    st.error(f"An error occurred: {e}. Please check your environment variables.")
 
 # Sidebar layout for initial submission
 with st.sidebar:
@@ -64,44 +91,114 @@ with st.sidebar:
         help="Enter the topic that will guide the AI in generating the documentation. For example, 'Machine Learning.'"
     )
     
-    submit_to_ai = st.sidebar.button("Submit to AI")    
+    submit_to_ai = st.sidebar.button("Submit to AI", help="Submit your request to the AI model for generating documentation.")  
 
 
 # Function to generate AI response
-def generate_ai_response(user_query):
-    return st.session_state.azure_openai_manager.generate_chat_response(
-        conversation_history=st.session_state.conversation_history,
-        system_message_content='''You are tasked with creating detailed, user-friendly documentation based on multiple documents and complex topics. 
-        The goal is to distill this information into an easy-to-follow "How-To" guide. This documentation should 
-        be structured with clear headings, subheadings, and step-by-step instructions that guide the user through 
-        the necessary processes or concepts. Each section should be well-organized and written in simple language 
-        to ensure that the content is accessible and understandable to users with varying levels of expertise. 
-        The documentation should cover the setup, configuration, and usage of tools or techniques, 
-        including practical examples and troubleshooting tips to address common issues or challenges that users 
-        might encounter.''',
-        query=user_query,
-        max_tokens=3000
+async def generate_ai_response(user_query):
+    try:
+        with st.spinner("🤖 Thinking..."):
+            ai_response = await asyncio.to_thread(
+                st.session_state.azure_openai_manager.generate_chat_response,
+                conversation_history=st.session_state.conversation_history,
+                system_message_content='''You are tasked with creating detailed, user-friendly documentation based on multiple documents and complex topics. 
+                The goal is to distill this information into an easy-to-follow "How-To" guide. This documentation should 
+                be structured with clear headings, subheadings, and step-by-step instructions that guide the user through 
+                the necessary processes or concepts. Each section should be well-organized and written in simple language 
+                to ensure that the content is accessible and understandable to users with varying levels of expertise. 
+                The documentation should cover the setup, configuration, and usage of tools or techniques, 
+                including practical examples and troubleshooting tips to address common issues or challenges that users 
+                might encounter.''',
+                query=user_query,
+                max_tokens=3000
+            )
+        st.balloons()
+        return ai_response
+    except Exception as e:
+        st.error(f"An error occurred while generating the AI response: {e}")
+        return None
+
+# Function to download chat history
+def download_chat_history():
+    chat_history_json = json.dumps(st.session_state.messages, indent=2)
+    st.download_button(
+        label="📜 Download Chat",
+        data=chat_history_json,
+        file_name='chat_history.json',
+        mime='application/json',
+        key='download-chat-history'
     )
 
+# Function to download AI response as DOCX or PDF
+def download_ai_response_as_docx_or_pdf():
+    try:
+        # Convert AI response from markdown to DOCX
+        doc_io = markdown_to_docx(st.session_state.ai_response)
+        
+        # Let the user select the file format
+        file_format = st.selectbox('Select file format', ['DOCX', 'PDF'])
+        
+        if file_format == 'DOCX':
+            st.download_button(
+                label="📁 Download .docx",
+                data=doc_io,
+                file_name='AI_Generated_Guide.docx',
+                mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                key='download-docx'
+            )
+        elif file_format == 'PDF':
+            # Convert the DOCX to PDF (you need to implement this function)
+            st.download_button(
+                label="📁 Download .pdf",
+                data=doc_io,
+                file_name='AI_Generated_Guide.pdf',
+                mime='application/pdf',
+                key='download-pdf'
+            )
+    except Exception as e:
+        logger.error(f"Error generating {file_format} file: {e}")
+        st.error(f"❌ Error generating {file_format} file. Please check the logs for more details.")
+
+
+# Function to process a single file
+async def process_single_file(semaphore, uploaded_file):
+    async with semaphore:
+        file_path = save_uploaded_file(uploaded_file)
+        try:
+            blob_name = os.path.basename(file_path)
+            blob_url = await asyncio.to_thread(
+                st.session_state.blob_data_extractor_manager.upload_file_to_blob, file_path, blob_name)
+            result_ocr = await asyncio.to_thread(
+                st.session_state.document_intelligence_manager.analyze_document,
+                document_input=blob_url,
+                model_type="prebuilt-layout",
+                output_format="markdown",
+                features=["OCR_HIGH_RESOLUTION"]
+            )
+            st.toast(f"Document '{uploaded_file.name}' has been successfully processed.", icon="😎")
+            return result_ocr.content
+        except Exception as e:
+            logger.error(f"Error processing file {uploaded_file.name}: {e}")
+            st.toast(f"Error processing file {uploaded_file.name}. Please check the logs for more details.")
+            return ""
+
 # Function to process uploaded files and generate initial AI response
-def process_and_generate_response(uploaded_files, user_inputs, topic, max_tokens=3000):
+async def process_and_generate_response(uploaded_files, user_inputs, topic, max_tokens=3000):
     markdown_content = ""
-    with st.spinner("Processing uploaded files..."):
-        for uploaded_file in uploaded_files:
-            file_path = save_uploaded_file(uploaded_file)
-            try:
-                blob_url = st.session_state.blob_data_extractor_manager.upload_file_to_blob(file_path, uploaded_file.name)
-                result_ocr = st.session_state.document_intelligence_manager.analyze_document(
-                    document_input=blob_url,
-                    model_type="prebuilt-layout",
-                    output_format="markdown",
-                    features=["OCR_HIGH_RESOLUTION"]
-                )
-                markdown_content += result_ocr.content + "\n\n"
-                st.success(f"Document '{uploaded_file.name}' has been successfully processed.")
-            except Exception as e:
-                logger.error(f"Error processing file {uploaded_file.name}: {e}")
-                st.error(f"Error processing file {uploaded_file.name}. Please check the logs for more details.")
+    semaphore = asyncio.Semaphore(5)  # Limit to 5 concurrent tasks
+
+    with st.spinner("🤖 Processing uploaded files..."):
+        tasks = [process_single_file(semaphore, uploaded_file) for uploaded_file in uploaded_files]
+        results = await asyncio.gather(*tasks)
+
+    for result in results:
+        if result:
+            markdown_content += result + "\n\n"
+
+    enc = tiktoken.get_encoding("cl100k_base")
+    token_count = len(enc.encode(markdown_content))
+
+    st.toast(f"The processed content has {token_count} tokens.", icon="📊")
 
     query = f'''Given the content extracted from various documents using Optical Character Recognition (OCR) technology and provided in markdown format, your task is to create a high-quality, detailed "How-To" guide. The guide should distill complex topics into accessible, step-by-step instructions tailored for users seeking to understand or implement specific processes or concepts.
         userinputs: {user_inputs}
@@ -133,7 +230,8 @@ def process_and_generate_response(uploaded_files, user_inputs, topic, max_tokens
         - minimum length of the document should be {max_tokens} tokens'''
 
     st.session_state.conversation_history.append({"role": "user", "content": query})
-    ai_response = generate_ai_response(query)
+    ai_response = await generate_ai_response(query)
+    
     st.session_state['ai_response'] = ai_response
     st.session_state.chat_history.append({"role": "ai", "content": ai_response})
 
@@ -142,29 +240,12 @@ if submit_to_ai:
     if not uploaded_files or not user_inputs or not topic:
         st.sidebar.error("Please fill in all the fields and upload a document.")
     else:
-        process_and_generate_response(uploaded_files, user_inputs, topic)
+        asyncio.run(process_and_generate_response(uploaded_files, user_inputs, topic))
 
 # Chat interface for feedback and refining output
 if st.session_state.ai_response:
     st.markdown("## AI Response")
     st.markdown(st.session_state.ai_response, unsafe_allow_html=True)
-
-    # Download button for the generated guide
-    if st.button('Download Guide as DOCX'):
-        ai_response = st.session_state.get("ai_response", "")
-        if ai_response:
-            with st.spinner("Generating DOCX file..."):
-                try:
-                    doc = markdown_to_docx(ai_response)
-                    with open('Generated_Guide.docx', 'rb') as file:
-                        st.download_button('Download Guide', file, 'Generated_Guide.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-                    st.success("Guide generated and ready for download.")
-                except Exception as e:
-                    logger.error(f"Error generating DOCX file: {e}")
-                    st.error("Error generating DOCX file. Please check the logs for more details.")
-        else:
-            st.error("No AI response available to generate the DOCX file.")
-
     feedback_prompt = st.chat_input("Enter your feedback or additional instructions:")
     
     if feedback_prompt:
@@ -172,15 +253,22 @@ if st.session_state.ai_response:
         with st.chat_message("user"):
             st.markdown(feedback_prompt)
 
-        ai_response = generate_ai_response(feedback_prompt)
+        ai_response = asyncio.run(generate_ai_response(feedback_prompt))
         st.session_state.ai_response = ai_response
         st.session_state.messages.append({"role": "assistant", "content": ai_response})
         
         st.markdown("### Updated AI Response")
         st.markdown(ai_response, unsafe_allow_html=True)
 
-# Display chat messages from history on app rerun
+# Display chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
-
+    
+# Display download buttons in the sidebar if there is an AI response
+if st.session_state.ai_response:
+    with st.sidebar:
+        st.markdown("### 📥 Download Options")
+        st.markdown("<small>Click the buttons below to download the AI response or chat history:</small>", unsafe_allow_html=True)
+        download_ai_response_as_docx_or_pdf()
+        download_chat_history()

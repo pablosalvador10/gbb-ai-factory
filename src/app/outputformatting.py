@@ -1,12 +1,13 @@
 from docx import Document
+import io
 
-def markdown_to_docx(markdown_text: str) -> Document:
+def markdown_to_docx(markdown_text: str) -> io.BytesIO:
     """
     Converts markdown text to a docx document.
 
     :param markdown_text: The input markdown text to be converted.
     
-    :return: The generated docx document.
+    :return: The generated docx document as a BytesIO object.
     """
     doc = Document()
     lines = markdown_text.split('\n')
@@ -18,6 +19,10 @@ def markdown_to_docx(markdown_text: str) -> Document:
             doc.add_heading(line[3:], level=2)
         elif line.startswith('### '):
             doc.add_heading(line[4:], level=3)
+        elif line.startswith('#### '):
+            doc.add_heading(line[5:], level=4)
+        elif line.startswith('##### '):
+            doc.add_heading(line[6:], level=5)
         elif line.startswith('- '):
             paragraph = doc.add_paragraph(style='ListBullet')
             process_bold_text(line[2:], paragraph)
@@ -25,8 +30,10 @@ def markdown_to_docx(markdown_text: str) -> Document:
             paragraph = doc.add_paragraph()
             process_bold_text(line, paragraph)
     
-    doc.save('Generated_Guide.docx')
-    return doc
+    doc_io = io.BytesIO()
+    doc.save(doc_io)
+    doc_io.seek(0)
+    return doc_io
 
 def process_bold_text(text: str, paragraph) -> None:
     """

@@ -24,16 +24,19 @@ class AzureBlobDataExtractor:
         container_client: Azure Container Client specific to the container.
     """
 
-    def __init__(self, container_name: Optional[str] = None):
+    def __init__(self, container_name: Optional[str] = None, 
+                 connect_str: Optional[str] = None):
         """
-        Initialize the AzureBlobManager with a container name.
+        Initialize the AzureBlobManager with a container name and an optional connection string.
 
         Args:
             container_name (str, optional): Name of the Azure Blob Storage container. Defaults to None.
+            connect_str (str, optional): Azure Storage connection string. If not provided, it will be fetched from environment variables. Defaults to None.
         """
         try:
             load_dotenv()
-            connect_str = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+            if connect_str is None:
+                connect_str = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
             if connect_str is None:
                 logger.error(
                     "AZURE_STORAGE_CONNECTION_STRING not found in environment variables."

@@ -19,3 +19,6 @@ tiktoken==0.5.2
 markdown
 matplotlib
 seaborn
+tiktoken
+aiofiles 
+asyncio
