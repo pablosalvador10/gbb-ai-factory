@@ -1,5 +1,5 @@
 def get_cosmos_db_prompt(prompt):
-    return f'''
+    return f"""
     # Cosmos DB Query Translator
 
     Your goal is to understand the essence of each user query, identify the relevant database fields, and construct an accurate Cosmos DB query that retrieves the requested information.
@@ -56,10 +56,11 @@ def get_cosmos_db_prompt(prompt):
     SELECT c.RequestId, c.Status FROM c WHERE c.Status = 'In progress' AND c.AssignedTo = 'Jane Doe'
     
     return only the query, no verbosity.
-    '''
+    """
+
 
 def get_chat_cosmos_db_prompt(prompt, json_response):
-    return f'''
+    return f"""
     # Cosmos DB Response Processor
 
     ## Introduction
@@ -83,4 +84,4 @@ def get_chat_cosmos_db_prompt(prompt, json_response):
     ## Instructions
     - Parse JSON: Carefully read and interpret the JSON data to understand the details of the project requests it contains.
     - Answer the Question: Based on your understanding of the JSON data, provide an answer to the user's question. Ensure that your answer is directly supported by the data in the JSON response. If there's not enough information to answer the question, return a message saying "We are not able to assist you at this moment. Please try with another inquiry.
-    '''
+    """

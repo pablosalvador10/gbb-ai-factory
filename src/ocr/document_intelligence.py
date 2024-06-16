@@ -83,7 +83,7 @@ class AzureDocumentIntelligenceManager:
 
     def analyze_document(
         self,
-        document_input: str,
+        document_input: Union[str, bytes],
         model_type: str = "prebuilt-layout",
         pages: Optional[str] = None,
         locale: Optional[str] = None,
@@ -139,7 +139,20 @@ class AzureDocumentIntelligenceManager:
             ]
 
         # Check if the document_input is a URL
-        if document_input.startswith(("http://", "https://")):
+        if isinstance(document_input, bytes):
+            poller = self.document_analysis_client.begin_analyze_document(
+                model_id=model_type,
+                analyze_request=AnalyzeDocumentRequest(bytes_source=document_input),
+                pages=pages,
+                locale=locale,
+                string_index_type=string_index_type,
+                features=features,
+                query_fields=query_fields,
+                output_content_format=output_format if output_format else "text",
+                content_type=content_type,
+                **kwargs,
+            )
+        elif document_input.startswith(("http://", "https://")):
             # If it's an HTTP URL, raise an error
             if document_input.startswith("http://"):
                 raise ValueError("HTTP URLs are not supported. Please use HTTPS.")
@@ -174,10 +187,10 @@ class AzureDocumentIntelligenceManager:
                 )
         else:
             with open(document_input, "rb") as f:
-                # FIXME: local upload is not working
+                file_content = f.read()
                 poller = self.document_analysis_client.begin_analyze_document(
                     model_id=model_type,
-                    analyze_request=f,
+                    analyze_request=AnalyzeDocumentRequest(bytes_source=file_content),
                     pages=pages,
                     locale=locale,
                     string_index_type=string_index_type,
@@ -187,7 +200,6 @@ class AzureDocumentIntelligenceManager:
                     content_type=content_type,
                     **kwargs,
                 )
-
         return poller.result()
 
     def process_invoice(self, invoice: Document) -> Dict:

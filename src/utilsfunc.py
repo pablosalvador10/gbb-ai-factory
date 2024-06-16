@@ -1,14 +1,13 @@
 import os
 import uuid
-from typing import Any, Dict
 from datetime import datetime
-import requests
-import time
-import json
+from typing import Any, Dict
+
 from utils.ml_logging import get_logger
 
 # Initialize logging
 logger = get_logger()
+
 
 def save_uploaded_file(uploaded_file) -> str:
     """
@@ -74,5 +73,3 @@ def compare_invoices(
         }
         for key in keys_to_compare
     }
-
-

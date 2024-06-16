@@ -1,20 +1,21 @@
 import base64
-import streamlit as st
+import datetime
 import re
 import secrets
 import string
-from src.app.utilsapp import send_email
-from typing import List, Dict
-from dotenv import load_dotenv
-import datetime
+from typing import Dict, List
 
-from src.app.qualiFictionAlgo import calculate_total_score
-from src.ocr.transformer import GPT4VisionManager
-from utils.ml_logging import get_logger
-from src.utilsfunc import save_uploaded_file
-from src.app.oumapping import ou_email_mapping
+import streamlit as st
+from dotenv import load_dotenv
+
 from src import settings
+from src.app.oumapping import ou_email_mapping
+from src.app.qualiFictionAlgo import calculate_total_score
+from src.app.utilsapp import send_email
 from src.ocr.cosmosDB_indexer import CosmosDBIndexer
+from src.ocr.transformer import GPT4VisionManager
+from src.utilsfunc import save_uploaded_file
+from utils.ml_logging import get_logger
 
 # Load environment variables from .env file
 load_dotenv()
@@ -23,22 +24,24 @@ load_dotenv()
 logger = get_logger()
 
 DELAY_TIME = 0.01
-FROM_EMAIL= "Pablosalvadorlopez@outlook.com"
+FROM_EMAIL = "Pablosalvadorlopez@outlook.com"
 
 # Initialize GPT4VisionManager in session state
 if "gpt4_vision_manager" not in st.session_state:
     st.session_state.gpt4_vision_manager = GPT4VisionManager()
 
 if "cosmos_manager" not in st.session_state:
-    st.session_state.cosmos_client = CosmosDBIndexer(database_name="gbbai-qualifiction-db",
-                                                     container_name="gbbai-qualifiction")
+    st.session_state.cosmos_client = CosmosDBIndexer(
+        database_name="gbbai-qualifiction-db", container_name="gbbai-qualifiction"
+    )
 
 
 # Function to convert image to base64 for embedding
 def get_image_base64(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode("utf-8")
-    
+
+
 # Chatbot interface
 st.title("💡 Submit Your Request !")
 
@@ -70,14 +73,17 @@ with st.expander("About this App"):
         unsafe_allow_html=True,
     )
 
-def process_input(image_paths: List[str], 
-                  tracking_id: str,
-                  engagement_description: str, 
-                  total_score: float, 
-                  weighted_projected_acr: float, 
-                  weighted_projected_length: float, 
-                  weighted_partner_executives: float, 
-                  weighted_actual_acr: float) -> Dict:
+
+def process_input(
+    image_paths: List[str],
+    tracking_id: str,
+    engagement_description: str,
+    total_score: float,
+    weighted_projected_acr: float,
+    weighted_projected_length: float,
+    weighted_partner_executives: float,
+    weighted_actual_acr: float,
+) -> Dict:
     """
     This function processes the input data and calculates various metrics.
 
@@ -166,7 +172,6 @@ def process_input(image_paths: List[str],
 
         """
 
-    
     # Call GPT4 Vision Manager
     response = st.session_state.gpt4_vision_manager.call_gpt4v_image(
         image_paths,
@@ -180,29 +185,70 @@ def process_input(image_paths: List[str],
     )
     return response
 
-with st.form("request_form", 
-             clear_on_submit=False):
+
+with st.form("request_form", clear_on_submit=False):
     bif_name = st.text_input("Request Title", "Request 1")
     bif_requestername = st.text_input("Requester", "John Doe")
     bif_requesteremail = st.text_input("Requester", "johnjoe@microsoft.com")
     bif_partner = st.multiselect("Partner", ["Yes", "No"], default=["Yes"])
-    projected_work_hours = st.number_input("Projected Amount of Work (in hours)", value=10, min_value=1, max_value=60,
-                                           help='''Please enter the estimated number of hours required to complete the work. 
-                                           Be as specific as possible and try to be conservative in your estimate. The value should be between 1 and 60.''')
+    projected_work_hours = st.number_input(
+        "Projected Amount of Work (in hours)",
+        value=10,
+        min_value=1,
+        max_value=60,
+        help="""Please enter the estimated number of hours required to complete the work. 
+                                           Be as specific as possible and try to be conservative in your estimate. The value should be between 1 and 60.""",
+    )
 
-    expected_start_date = st.date_input("Expected Start Date", datetime.date.today() + datetime.timedelta(days=1),
-                                        help='Please select the expected start date for the project. This date should be in the future.')
+    expected_start_date = st.date_input(
+        "Expected Start Date",
+        datetime.date.today() + datetime.timedelta(days=1),
+        help="Please select the expected start date for the project. This date should be in the future.",
+    )
     # Check if the selected date is in the future
     if expected_start_date <= datetime.date.today():
-        st.error('Error: The selected date is not in the future. Please select a future date.')    
+        st.error(
+            "Error: The selected date is not in the future. Please select a future date."
+        )
     bif_msxid = st.text_input("MSXID", "5678")
     bif_topparentid = st.text_input("TPID", "1234")
-    bif_primarysolutionareaname = st.multiselect("Primary Solution Area", ["AI/ML", "AI infra", "Knowledge Mining", "ML infra"], default=["AI/ML"])
-    bif_secondarytechnologyname = st.multiselect("Secondary Solution Area", ["Application Development (LLMOps/MLOps)", "Enterprise AI/ML Architecture", "Infrastructure Optimization"], default=["Enterprise AI/ML Architecture"])
+    bif_primarysolutionareaname = st.multiselect(
+        "Primary Solution Area",
+        ["AI/ML", "AI infra", "Knowledge Mining", "ML infra"],
+        default=["AI/ML"],
+    )
+    bif_secondarytechnologyname = st.multiselect(
+        "Secondary Solution Area",
+        [
+            "Application Development (LLMOps/MLOps)",
+            "Enterprise AI/ML Architecture",
+            "Infrastructure Optimization",
+        ],
+        default=["Enterprise AI/ML Architecture"],
+    )
     bif_customername = st.text_input("Customer Name", "CustomerName Inc.")
-    bif_ou = st.multiselect("Operating Unit", ["Retail/CPG", "FSI", "MFG", "HLS", "SDP", "West/Midwest", "South", "Northeast", "Southeast", "LATAM", "Canada", "Education", "Fed / Public Sector"])
-    problem_description = st.text_area("Description of the Problem (make sure to add details to explain the problem)", 
-                                       "The system is not responding.", help='''
+    bif_ou = st.multiselect(
+        "Operating Unit",
+        [
+            "Retail/CPG",
+            "FSI",
+            "MFG",
+            "HLS",
+            "SDP",
+            "West/Midwest",
+            "South",
+            "Northeast",
+            "Southeast",
+            "LATAM",
+            "Canada",
+            "Education",
+            "Fed / Public Sector",
+        ],
+    )
+    problem_description = st.text_area(
+        "Description of the Problem (make sure to add details to explain the problem)",
+        "The system is not responding.",
+        help='''
         Craft a succinct business description that outlines the client's objectives, current utilization of Azure data and AI services, and the project timeline. 
 
         - **Objectives**: Detail the client's goals, such as enhancing efficiency or scalability, and specify Azure services like AOAI and/or AML. 
@@ -210,25 +256,64 @@ with st.form("request_form",
 
         **Example**: "Support the client in enhancing their legacy COBOL application infrastructure by developing a custom copilot tool utilizing GenAI capabilities for efficient code migration to Python. This initiative aims to improve operational efficiency, ensure scalability, and foster maintainability within the client's application ecosystem.
 
-        **Azure Services Utilization**: The project will leverage Azure OpenAI (AOAI) for intelligent code translation and Azure Machine Learning (AML) to automate the migration process, optimizing the transition from COBOL to Python."''')
-    projected_value = st.number_input("Projected ACR (in dollars)", value=10000, step=10000, 
-                                      help='Please enter the projected Annual Contract Revenue (ACR) in dollars. The value must be between 0 (exclusive) and 50000 (inclusive).')
+        **Azure Services Utilization**: The project will leverage Azure OpenAI (AOAI) for intelligent code translation and Azure Machine Learning (AML) to automate the migration process, optimizing the transition from COBOL to Python."''',
+    )
+    projected_value = st.number_input(
+        "Projected ACR (in dollars)",
+        value=10000,
+        step=10000,
+        help="Please enter the projected Annual Contract Revenue (ACR) in dollars. The value must be between 0 (exclusive) and 50000 (inclusive).",
+    )
 
     if projected_value <= 0 or projected_value > 50000:
         st.error("The value must be between 0 (exclusive) and 50000 (inclusive).")
 
-    necessary_skills = st.multiselect("Skills Necessary", ["Python", "Machine Learning", "Data Analysis", "Deep Learning", 
-                                                           "Natural Language Processing", "Computer Vision", "Generative AI",
-                                                             "RAG", "MLOps", "LLMLOps", "N/A"])    
-    azure_ai_services = st.multiselect("Azure AI Services", ["AOAI", "Azure AI Search", "Azure Document Intelligence", 
-                                                            "Azure Machine Learning", "Azure Bot Service", "Azure Databricks",
-                                                            "Azure Anomaly Detector", "N/A"], default=["AOAI"])    
-    engagement_country = st.text_input("Engagement Country", "USA", 
-                                       help='Please enter the country where the engagement is taking place. For example, "USA".')
-    engagement_region = st.text_input("Engagement Region", "Midwest",
-                                      help='Please enter the region where the engagement is taking place. For example, "Midwest".')
-    monthly_usage = st.number_input("Monthly Usage (in dollars)", value=10000, step=10000, 
-                                help='Please enter the monthly ACR of the service in dollars. The value must be between 0 (exclusive) and 100000 (inclusive).')
+    necessary_skills = st.multiselect(
+        "Skills Necessary",
+        [
+            "Python",
+            "Machine Learning",
+            "Data Analysis",
+            "Deep Learning",
+            "Natural Language Processing",
+            "Computer Vision",
+            "Generative AI",
+            "RAG",
+            "MLOps",
+            "LLMLOps",
+            "N/A",
+        ],
+    )
+    azure_ai_services = st.multiselect(
+        "Azure AI Services",
+        [
+            "AOAI",
+            "Azure AI Search",
+            "Azure Document Intelligence",
+            "Azure Machine Learning",
+            "Azure Bot Service",
+            "Azure Databricks",
+            "Azure Anomaly Detector",
+            "N/A",
+        ],
+        default=["AOAI"],
+    )
+    engagement_country = st.text_input(
+        "Engagement Country",
+        "USA",
+        help='Please enter the country where the engagement is taking place. For example, "USA".',
+    )
+    engagement_region = st.text_input(
+        "Engagement Region",
+        "Midwest",
+        help='Please enter the region where the engagement is taking place. For example, "Midwest".',
+    )
+    monthly_usage = st.number_input(
+        "Monthly Usage (in dollars)",
+        value=10000,
+        step=10000,
+        help="Please enter the monthly ACR of the service in dollars. The value must be between 0 (exclusive) and 100000 (inclusive).",
+    )
 
     if monthly_usage <= 0 or monthly_usage > 100000:
         st.error("The value must be between 0 (exclusive) and 100000 (inclusive).")
@@ -240,20 +325,61 @@ with st.form("request_form",
 def main():
     image_paths = []
     if submit_button:
-        mandatory_fields = [bif_name, bif_requestername, bif_partner, projected_work_hours, expected_start_date, bif_msxid, bif_topparentid, 
-                            bif_primarysolutionareaname, bif_secondarytechnologyname, bif_customername, problem_description, projected_value, 
-                            bif_ou, azure_ai_services]
+        mandatory_fields = [
+            bif_name,
+            bif_requestername,
+            bif_partner,
+            projected_work_hours,
+            expected_start_date,
+            bif_msxid,
+            bif_topparentid,
+            bif_primarysolutionareaname,
+            bif_secondarytechnologyname,
+            bif_customername,
+            problem_description,
+            projected_value,
+            bif_ou,
+            azure_ai_services,
+        ]
 
-        field_names = ['Request Name', 'Requester', 'Partner', 'Projected Work Hours', 'Expected Start Date', 'MSXID', 'TPID', 
-                       'Primary Solution Area', 'Secondary Solution Area', 'Customer Name', 'Problem Description', 'Projected ROI Value', 
-                       'Operating Unit', 'Azure AI Services']
+        field_names = [
+            "Request Name",
+            "Requester",
+            "Partner",
+            "Projected Work Hours",
+            "Expected Start Date",
+            "MSXID",
+            "TPID",
+            "Primary Solution Area",
+            "Secondary Solution Area",
+            "Customer Name",
+            "Problem Description",
+            "Projected ROI Value",
+            "Operating Unit",
+            "Azure AI Services",
+        ]
 
         if all(mandatory_fields):
-            logger.info("Form submitted with values: %s", 
-                        [bif_name, bif_requestername, bif_partner, projected_work_hours, expected_start_date, bif_msxid, bif_topparentid, 
-                         bif_primarysolutionareaname, bif_secondarytechnologyname, bif_customername, problem_description, projected_value, 
-                         bif_ou, azure_ai_services])
-                
+            logger.info(
+                "Form submitted with values: %s",
+                [
+                    bif_name,
+                    bif_requestername,
+                    bif_partner,
+                    projected_work_hours,
+                    expected_start_date,
+                    bif_msxid,
+                    bif_topparentid,
+                    bif_primarysolutionareaname,
+                    bif_secondarytechnologyname,
+                    bif_customername,
+                    problem_description,
+                    projected_value,
+                    bif_ou,
+                    azure_ai_services,
+                ],
+            )
+
             # Add a file uploader
             if uploaded_file is not None:
                 file_path = save_uploaded_file(uploaded_file)
@@ -261,19 +387,41 @@ def main():
 
             # Get current time
             createdon = datetime.datetime.now().strftime("%Y-%m-%d")
-            bif_requestid = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(8))
+            bif_requestid = "".join(
+                secrets.choice(string.ascii_letters + string.digits) for _ in range(8)
+            )
 
             with st.expander("Results"):
                 # Process input if prompt is provided
-                with st.spinner('Calculating score...'):
+                with st.spinner("Calculating score..."):
                     bif_parthner = 1 if "Yes" in bif_partner else 0
-                    total_score, weighted_projected_acr, weighted_projected_length, weighted_partner_executives, weighted_actual_acr = calculate_total_score(
-                        int(projected_value), int(projected_work_hours), bif_parthner, int(monthly_usage))
-                    st.success(f"Qualification.ai Score successfully calculated: {total_score}")
+                    (
+                        total_score,
+                        weighted_projected_acr,
+                        weighted_projected_length,
+                        weighted_partner_executives,
+                        weighted_actual_acr,
+                    ) = calculate_total_score(
+                        int(projected_value),
+                        int(projected_work_hours),
+                        bif_parthner,
+                        int(monthly_usage),
+                    )
+                    st.success(
+                        f"Qualification.ai Score successfully calculated: {total_score}"
+                    )
 
-                with st.spinner('Evaluating your request, please wait...'):
-                    response = process_input(image_paths, bif_requestid, str(problem_description), total_score, weighted_projected_acr,
-                                             weighted_projected_length, weighted_partner_executives, weighted_actual_acr)
+                with st.spinner("Evaluating your request, please wait..."):
+                    response = process_input(
+                        image_paths,
+                        bif_requestid,
+                        str(problem_description),
+                        total_score,
+                        weighted_projected_acr,
+                        weighted_projected_length,
+                        weighted_partner_executives,
+                        weighted_actual_acr,
+                    )
                     st.write(response)
 
                 # Send email to the AI GBB team aligned to the selected OUs
@@ -286,60 +434,68 @@ def main():
                     for ou in common_ous:
                         to_emails = ou_email_mapping[ou]
                         if to_emails:
-                            send_email(response=response,
-                                    from_email=FROM_EMAIL,
-                                    to_emails=[to_emails],
-                                    subject=f"Qualification.ai Request Evaluation - Tracking ID: {bif_requestid}")
-                            st.success(f"Email sent successfully to the AI GBB team aligned to {ou}: {', '.join(to_emails)}")
+                            send_email(
+                                response=response,
+                                from_email=FROM_EMAIL,
+                                to_emails=[to_emails],
+                                subject=f"Qualification.ai Request Evaluation - Tracking ID: {bif_requestid}",
+                            )
+                            st.success(
+                                f"Email sent successfully to the AI GBB team aligned to {ou}: {', '.join(to_emails)}"
+                            )
                         else:
                             st.warning(f"No email addresses found for {ou}.")
                 else:
-                    st.error(f"None of the selected OUs found in email mapping.")
+                    st.error("None of the selected OUs found in email mapping.")
 
-                 # Extract decision from response
-                decision_match = re.search(r'\*\*(Approved|Rejected)\*\*', response)
+                # Extract decision from response
+                decision_match = re.search(r"\*\*(Approved|Rejected)\*\*", response)
                 if decision_match:
                     decision = decision_match.group(1)
                     if decision == "Approved":
                         approved = "True"
-                    elif decision == "Rejected": 
+                    elif decision == "Rejected":
                         approved = "False"
                 else:
                     st.error("Could not extract decision from response.")
                     decision = None
 
             request_data = {
-                'RequestTitle': bif_name,
-                'Requester': bif_requestername,
-                'RequesterEmail': bif_requesteremail,
-                'Partner': bif_partner[0] if bif_partner else None,
-                'ProjectedWorkHours': projected_work_hours,
-                'ExpectedStartDate': expected_start_date.strftime("%Y-%m-%d"),
-                'MSXID': bif_msxid,
-                'TPID': bif_topparentid,
-                'PrimarySolutionArea': bif_primarysolutionareaname,
-                'SecondarySolutionArea': bif_secondarytechnologyname,
-                'CustomerName': bif_customername,
-                'OperatingUnit': bif_ou,
-                'ProblemDescription': problem_description,
-                'ProjectedACR': projected_value,
-                'NecessarySkills': necessary_skills,
-                'AzureAIServices': azure_ai_services,
-                'EngagementCountry': engagement_country,
-                'EngagementRegion': engagement_region,
-                'MonthlyUsage': monthly_usage,
-                'Attachment': uploaded_file.read() if uploaded_file else None,
-                'CreatedDate': createdon,
-                'RequestId': bif_requestid,
-                'Status': 'In progress' if approved == "True" else 'Blocked due to Rejection',
-                'AssignedTo': to_emails, 
-                'AssignedDate': createdon,
-                'Approved': approved,
-                'ApprovedDate': createdon,
-                'ApprovedBy' : "QualiFiction.ai",
+                "RequestTitle": bif_name,
+                "Requester": bif_requestername,
+                "RequesterEmail": bif_requesteremail,
+                "Partner": bif_partner[0] if bif_partner else None,
+                "ProjectedWorkHours": projected_work_hours,
+                "ExpectedStartDate": expected_start_date.strftime("%Y-%m-%d"),
+                "MSXID": bif_msxid,
+                "TPID": bif_topparentid,
+                "PrimarySolutionArea": bif_primarysolutionareaname,
+                "SecondarySolutionArea": bif_secondarytechnologyname,
+                "CustomerName": bif_customername,
+                "OperatingUnit": bif_ou,
+                "ProblemDescription": problem_description,
+                "ProjectedACR": projected_value,
+                "NecessarySkills": necessary_skills,
+                "AzureAIServices": azure_ai_services,
+                "EngagementCountry": engagement_country,
+                "EngagementRegion": engagement_region,
+                "MonthlyUsage": monthly_usage,
+                "Attachment": uploaded_file.read() if uploaded_file else None,
+                "CreatedDate": createdon,
+                "RequestId": bif_requestid,
+                "Status": "In progress"
+                if approved == "True"
+                else "Blocked due to Rejection",
+                "AssignedTo": to_emails,
+                "AssignedDate": createdon,
+                "Approved": approved,
+                "ApprovedDate": createdon,
+                "ApprovedBy": "QualiFiction.ai",
             }
-                
-            st.session_state.cosmos_client.index_data(data_list=[request_data], id_key="RequestId")
+
+            st.session_state.cosmos_client.index_data(
+                data_list=[request_data], id_key="RequestId"
+            )
 
         else:
             logger.error("Form submitted but not all fields were filled.")
@@ -347,6 +503,6 @@ def main():
                 if not field:
                     st.error(f"Please fill in the mandatory field: {name}")
 
-      
+
 # Call the main function
 main()

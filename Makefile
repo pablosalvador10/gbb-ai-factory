@@ -63,7 +63,7 @@ define log_section
 endef
 
 run_streamlit:
-	streamlit run src/app/ElearningAI.py
+	streamlit run src/app/Home.py
 
 create_conda_env:
 	@echo "Creating conda environment"

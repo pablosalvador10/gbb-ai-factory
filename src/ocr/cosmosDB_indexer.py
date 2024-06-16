@@ -1,7 +1,14 @@
-from typing import Dict, Any, Optional, List
-from azure.cosmos import CosmosClient, DatabaseProxy, ContainerProxy, PartitionKey
-from azure.cosmos import exceptions
 import os
+from typing import Any, Dict, List, Optional
+
+from azure.cosmos import (
+    ContainerProxy,
+    CosmosClient,
+    DatabaseProxy,
+    PartitionKey,
+    exceptions,
+)
+
 from utils.ml_logging import get_logger
 
 # Initialize logging

@@ -1,11 +1,11 @@
 import base64
+import json
 import os
-from typing import Dict, List, Optional, Union, Any
+import time
+from typing import Any, Dict, List, Optional, Union
 
 import openai
 import requests
-import time
-import json
 from dotenv import load_dotenv
 from IPython.display import Image, display
 from requests.exceptions import RequestException
@@ -55,8 +55,10 @@ class GPT4VisionManager:
         self.blob_manager = AzureBlobDataExtractor(container_name=container_name)
         self.azure_endpoint_vision = os.getenv("AZURE_ENDPOINT_VISION")
         self.azure_key_vision = os.getenv("AZURE_KEY_VISION")
-        self.video_indexer = VideoIndexer(vision_api_endpoint=self.azure_endpoint_vision,
-                                          vision_api_key=self.azure_key_vision)
+        self.video_indexer = VideoIndexer(
+            vision_api_endpoint=self.azure_endpoint_vision,
+            vision_api_key=self.azure_key_vision,
+        )
 
     def load_environment_variables_from_env_file(self):
         """
@@ -355,9 +357,7 @@ class GPT4VisionManager:
             logger.error(f"Azure OpenAI API error: {e}")
             return None
 
-
-    def call_GPT4V_video(self, messages: str, 
-                         video_index: Dict[str, str]) -> Any:
+    def call_GPT4V_video(self, messages: str, video_index: Dict[str, str]) -> Any:
         """
         Constructs and sends a request to the GPT-4 model with vision capabilities to process video data.
 
@@ -366,8 +366,12 @@ class GPT4VisionManager:
         :return: The JSON response from the API.
         """
         if not self.azure_endpoint_vision or not self.azure_key_vision:
-            logger.error("Missing required Azure Computer Vision environment variables.")
-            raise SystemExit("Missing required Azure Computer Vision environment variables.")
+            logger.error(
+                "Missing required Azure Computer Vision environment variables."
+            )
+            raise SystemExit(
+                "Missing required Azure Computer Vision environment variables."
+            )
 
         vision_api_config = {
             "endpoint": self.azure_endpoint_vision,
@@ -440,7 +444,10 @@ class VideoIndexer:
         :return: The response object from the API call.
         """
         url: str = f"{self.vision_api_endpoint}computervision/retrieval/indexes/{index_name}?api-version=2023-05-01-preview"
-        headers: dict = {"Ocp-Apim-Subscription-Key": self.vision_api_key, "Content-Type": "application/json"}
+        headers: dict = {
+            "Ocp-Apim-Subscription-Key": self.vision_api_key,
+            "Content-Type": "application/json",
+        }
         data: dict = {"features": [{"name": "vision", "domain": "surveillance"}]}
         try:
             response = requests.put(url, headers=headers, data=json.dumps(data))
@@ -450,7 +457,9 @@ class VideoIndexer:
             raise
         return response
 
-    def add_video_to_index(self, index_name: str, video_url: str, video_id: str) -> requests.Response:
+    def add_video_to_index(
+        self, index_name: str, video_url: str, video_id: str
+    ) -> requests.Response:
         """
         Adds a video to an existing index.
 
@@ -460,20 +469,31 @@ class VideoIndexer:
         :return: The response object from the API call.
         """
         url: str = f"{self.vision_api_endpoint}computervision/retrieval/indexes/{index_name}/ingestions/my-ingestion?api-version=2023-05-01-preview"
-        headers: dict = {"Ocp-Apim-Subscription-Key": self.vision_api_key, "Content-Type": "application/json"}
-        data: dict = {"videos": [{"mode": "add", "documentId": video_id, "documentUrl": video_url}]}
+        headers: dict = {
+            "Ocp-Apim-Subscription-Key": self.vision_api_key,
+            "Content-Type": "application/json",
+        }
+        data: dict = {
+            "videos": [
+                {"mode": "add", "documentId": video_id, "documentUrl": video_url}
+            ]
+        }
         try:
             response = requests.put(url, headers=headers, data=json.dumps(data))
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to add video '{video_id}' to index '{index_name}': {e}")
+            logger.error(
+                f"Failed to add video '{video_id}' to index '{index_name}': {e}"
+            )
             raise
         return response
 
-    def wait_for_ingestion_completion(self, index_name: str, max_retries: int = 30) -> bool:
+    def wait_for_ingestion_completion(
+        self, index_name: str, max_retries: int = 30
+    ) -> bool:
         """
         Waits for the ingestion process of a video index to complete, polling the API until completion or failure.
-    
+
         :param index_name: The name of the video index to check for ingestion completion.
         :param max_retries: The maximum number of times to poll the API before giving up.
         :return: True if ingestion completed successfully, False otherwise.
@@ -481,9 +501,13 @@ class VideoIndexer:
         url: str = f"{self.vision_api_endpoint}computervision/retrieval/indexes/{index_name}/ingestions?api-version=2023-05-01-preview"
         headers: dict = {"Ocp-Apim-Subscription-Key": self.vision_api_key}
         retries: int = 0
-        logger.info(f"Starting to wait for ingestion completion for index '{index_name}' with up to {max_retries} retries.")
+        logger.info(
+            f"Starting to wait for ingestion completion for index '{index_name}' with up to {max_retries} retries."
+        )
         while retries < max_retries:
-            logger.info(f"Polling for ingestion completion. Attempt {retries + 1}/{max_retries}.")
+            logger.info(
+                f"Polling for ingestion completion. Attempt {retries + 1}/{max_retries}."
+            )
             time.sleep(15)  # Wait before polling again
             try:
                 response: requests.Response = requests.get(url, headers=headers)
@@ -499,13 +523,17 @@ class VideoIndexer:
                     logger.error(f"Ingestion failed. Details: {state_data['value'][0]}")
                     return False
             except requests.exceptions.RequestException as e:
-                logger.error(f"Failed to poll ingestion completion for index '{index_name}': {e}")
+                logger.error(
+                    f"Failed to poll ingestion completion for index '{index_name}': {e}"
+                )
                 return False
             retries += 1
         logger.info("Reached maximum retries without successful ingestion completion.")
         return False
 
-    def process_video_indexing(self, video_index_name: str, video_SAS_url: str, video_id: str) -> None:
+    def process_video_indexing(
+        self, video_index_name: str, video_SAS_url: str, video_id: str
+    ) -> None:
         """
         Processes video indexing by creating an index, adding a video to it, and waiting for ingestion completion.
 
@@ -515,10 +543,16 @@ class VideoIndexer:
         """
         try:
             response: requests.Response = self.create_video_index(video_index_name)
-            logger.info(f"Index creation response: {response.status_code}, {response.text}")
+            logger.info(
+                f"Index creation response: {response.status_code}, {response.text}"
+            )
 
-            response = self.add_video_to_index(video_index_name, video_SAS_url, video_id)
-            logger.info(f"Video addition response: {response.status_code}, {response.text}")
+            response = self.add_video_to_index(
+                video_index_name, video_SAS_url, video_id
+            )
+            logger.info(
+                f"Video addition response: {response.status_code}, {response.text}"
+            )
 
             if not self.wait_for_ingestion_completion(video_index_name):
                 logger.info("Ingestion did not complete within the expected time.")

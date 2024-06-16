@@ -86,7 +86,7 @@ class AzureOpenAITokenizer:
         num_tokens += 3
 
         return num_tokens
-    
+
     def estimate_tokens_completion(
         self,
         response: str,

@@ -24,8 +24,9 @@ class AzureBlobDataExtractor:
         container_client: Azure Container Client specific to the container.
     """
 
-    def __init__(self, container_name: Optional[str] = None, 
-                 connect_str: Optional[str] = None):
+    def __init__(
+        self, container_name: Optional[str] = None, connect_str: Optional[str] = None
+    ):
         """
         Initialize the AzureBlobManager with a container name and an optional connection string.
 
@@ -209,20 +210,25 @@ class AzureBlobDataExtractor:
         """
         try:
             # Create a blob client using the local file name as the name for the blob
-            blob_client = self.blob_service_client.get_blob_client(container=self.container_name, blob=blob_name)
+            blob_client = self.blob_service_client.get_blob_client(
+                container=self.container_name, blob=blob_name
+            )
 
             # Upload the created file
             with open(local_file_path, "rb") as data:
                 blob_client.upload_blob(data, overwrite=True)
-            logger.info(f"File {local_file_path} uploaded to blob storage as {blob_name}.")
+            logger.info(
+                f"File {local_file_path} uploaded to blob storage as {blob_name}."
+            )
 
             # Construct the blob URL
             blob_url = f"https://{self.blob_service_client.account_name}.blob.core.windows.net/{self.container_name}/{blob_name}"
             return blob_url
         except Exception as e:
-            logger.error(f"Failed to upload file {local_file_path} to blob storage: {e}")
+            logger.error(
+                f"Failed to upload file {local_file_path} to blob storage: {e}"
+            )
             raise
-
 
     def upload_files_from_bytes_to_blob(self, file_bytes: bytes, blob_name: str) -> str:
         """
@@ -240,7 +246,9 @@ class AzureBlobDataExtractor:
         """
         try:
             # Create a blob client using the specified blob name
-            blob_client = self.blob_service_client.get_blob_client(container=self.container_name, blob=blob_name)
+            blob_client = self.blob_service_client.get_blob_client(
+                container=self.container_name, blob=blob_name
+            )
 
             # Upload the file directly from its byte stream
             blob_client.upload_blob(file_bytes, overwrite=True)
