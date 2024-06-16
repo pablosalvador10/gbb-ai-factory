@@ -12,6 +12,7 @@ from src.app.outputformatting import markdown_to_docx
 from src.extractors.blob_data_extractor import AzureBlobDataExtractor
 from src.ocr.document_intelligence import AzureDocumentIntelligenceManager
 from utils.ml_logging import get_logger
+from src.app.prompts import generate_system_message
 
 # Load environment variables
 dotenv.load_dotenv(".env")
@@ -47,7 +48,6 @@ if not st.session_state.get("env_vars_loaded", False):
         "azure_openai_manager": None,
         "document_intelligence_manager": None,
         "blob_data_extractor_manager": None,
-        "env_vars_load_count_free": st.session_state.get("env_vars_load_count_free", 0) + 1
     })
 
     if st.session_state["env_vars_load_count_free"] <= 3:
@@ -205,32 +205,115 @@ with st.sidebar:
             help="Select 'Yes' if you have a specific format in mind and would like to upload a document as a template.",
         )
         if has_predefined_format == "Yes":
-            uploaded_file = st.sidebar.file_uploader(
+            uploaded_file_output_format= st.sidebar.file_uploader(
                 "Upload your document template",
                 type=['pdf', 'docx', 'txt'],
                 help="Upload the document that will serve as a template for the output format.",
             )
+    elif operation == "Translation":
+            st.markdown(
+                """
+                <div style="text-align:center; font-size:30px; margin-top:10px;">
+                    ...
+                </div>
+                <div style="text-align:center; margin-top:20px;">
+            """,
+                unsafe_allow_html=True,
+            )
+            with st.expander("Translation Guide 🌍", expanded=False):
+                st.markdown(
+                    """
+                    Want to translate your documents into another language? Our application can help! 📄✨
+
+                    Here's how it works:
+                    1. **Upload your documents**: These could be text files, PDFs, images with text, or even audio files. Our AI can handle a variety of formats! 📚🎧
+                    2. **Specify the target language**: Enter the language you want the document to be translated into.
+                    3. **Sit back and relax**: Hit the 'Submit' button and let the AI do its magic. You'll get the translated document in no time! 🎩✨
+
+                    Ready to get started? Let's go! 🚀
+                    """
+                )
+
+                uploaded_files = st.sidebar.file_uploader(
+                    "Upload documents",
+                    type=[
+                        "png",
+                        "jpg",
+                        "jpeg",
+                        "pdf",
+                        "ppt",
+                        "pptx",
+                        "doc",
+                        "docx",
+                        "mp3",
+                        "wav",
+                    ],
+                    accept_multiple_files=True,
+                    help="Upload the documents you want the AI to translate. You can upload multiple documents of types PNG, JPG, JPEG, and PDF.",
+                )
+            target_language = st.sidebar.selectbox(
+                "Target Language",
+                ["English", "Spanish", "French", "German", "Chinese", "Japanese", "Russian", "Italian", "Portuguese", "Arabic"],
+                help="Select the language you want the document to be translated into."
+            )
+    elif operation == "Summarization":
+            st.markdown(
+                """
+                <div style="text-align:center; font-size:30px; margin-top:10px;">
+                    ...
+                </div>
+                <div style="text-align:center; margin-top:20px;">
+                """,
+                unsafe_allow_html=True,
+            )
+            with st.expander("Summarization Guide 📚", expanded=False):
+                st.markdown(
+                    """
+                    Overwhelmed by lengthy documents or numerous articles? Let our AI summarize them for you! 📄➡️📃✨
+
+                    Here's how it works:
+                    1. **Upload your documents**: You can upload text files, PDFs, images with text, or even audio files. Our AI is equipped to handle various formats! 📚🎧
+                    2. **Specify your summarization preferences**: Let us know if you're looking for a brief overview or detailed summary. The more details you provide, the better tailored the summary! 💡
+                    3. **Sit back and relax**: Once you hit the 'Submit' button, our AI will work its magic and provide you with a concise, easy-to-understand summary. 🎩✨
+
+                    Ready to simplify your reading list? Let's get started! 🚀
+                    """
+                )
+
+                uploaded_files = st.sidebar.file_uploader(
+                    "Upload documents for summarization",
+                    type=[
+                        "png",
+                        "jpg",
+                        "jpeg",
+                        "pdf",
+                        "ppt",
+                        "pptx",
+                        "doc",
+                        "docx",
+                        "mp3",
+                        "wav",
+                    ],
+                    accept_multiple_files=True,
+                    help="Upload the documents you want the AI to summarize. You can upload multiple documents of types PNG, JPG, JPEG, PDF, etc.",
+                )
+
+                summarization_preference = st.sidebar.selectbox(
+                    "Summarization Preference",
+                    options=["Brief Overview", "Detailed Summary"],
+                    help="Choose whether you want a brief overview or a detailed summary of the documents.",
+                )
 
     submit_to_ai = st.sidebar.button("Submit to AI")
 
 
-# Function to generate AI response
-async def generate_ai_response(user_query):
+async def generate_ai_response(user_query, system_message):
     try:
         with st.spinner("🤖 Thinking..."):
             ai_response, _ = await asyncio.to_thread(
                 st.session_state.azure_openai_manager.generate_chat_response,
                 conversation_history=st.session_state.conversation_history,
-                system_message_content="""You are tasked with creating detailed, 
-                user-friendly documentation based on multiple documents and complex topics.
-                The goal is to distill this information into an easy-to-follow "How-To" guide. 
-                This documentation should be structured with clear headings, subheadings,
-                and step-by-step instructions that guide the user through the necessary processes or concepts. 
-                Each section should be well-organized and written in simple language to ensure that the content 
-                is accessible and understandable to users with varying levels of expertise. 
-                The documentation should cover the setup, configuration, and usage of tools or 
-                techniques, including practical examples and troubleshooting tips to address common
-                  issues or challenges that users might encounter.""",
+                system_message_content=system_message,
                 query=user_query,
                 max_tokens=3000,
             )
@@ -246,8 +329,6 @@ async def generate_ai_response(user_query):
         st.error(f"An error occurred while generating the AI response: {e}")
         return None
 
-
-# Function to download chat history
 def download_chat_history():
     chat_history_json = json.dumps(st.session_state.messages, indent=2)
     st.download_button(
@@ -258,14 +339,9 @@ def download_chat_history():
         key="download-chat-history",
     )
 
-
-# Function to download AI response as DOCX or PDF
 def download_ai_response_as_docx_or_pdf():
     try:
-        # Convert AI response from markdown to DOCX
         doc_io = markdown_to_docx(st.session_state.ai_response)
-
-        # Let the user select the file format
         file_format = st.selectbox("Select file format", ["DOCX", "PDF"])
 
         if file_format == "DOCX":
@@ -277,7 +353,6 @@ def download_ai_response_as_docx_or_pdf():
                 key="download-docx",
             )
         elif file_format == "PDF":
-            # Convert the DOCX to PDF (you need to implement this function)
             st.download_button(
                 label="📁 Download .pdf",
                 data=doc_io,
@@ -289,14 +364,12 @@ def download_ai_response_as_docx_or_pdf():
         logger.error(f"Error generating {file_format} file: {e}")
         st.error(f"❌ Error generating {file_format} file. Please check the logs for more details.")
 
-
 async def process_single_file(semaphore, uploaded_file):
     async with semaphore:
         try:
             mime_type = uploaded_file.type
             logger.info(f"The MIME type is {mime_type}")
             if mime_type.startswith("audio/"):
-                # TODO: Improve audio processing
                 file_bytes = uploaded_file.read()
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
                     temp_file.write(file_bytes)
@@ -311,6 +384,13 @@ async def process_single_file(semaphore, uploaded_file):
                         )
                     except Exception as e:
                         logger.error(f"Error during transcription: {e}")
+                    finally:
+                        if os.path.exists(temp_file_path):
+                            try:
+                                os.remove(temp_file_path)
+                                logger.info("Temporary file removed successfully.")
+                            except Exception as e:
+                                logger.error(f"Failed to remove temporary file: {e}")
             elif mime_type in ["image/png", "image/jpg", "image/jpeg"]:
                 file_bytes = uploaded_file.read()
                 result_ocr, _ = await asyncio.to_thread(
@@ -349,19 +429,152 @@ async def process_single_file(semaphore, uploaded_file):
             logger.error(f"Error processing file {uploaded_file.name}: {e}")
             st.toast(f"Error processing file {uploaded_file.name}. Please check the logs for more details.")
             return ""
-        finally:
-            if os.path.exists(temp_file_path):
-                try:
-                    os.remove(temp_file_path)
-                    logger.info("Temporary file removed successfully.")
-                except Exception as e:
-                    logger.error(f"Failed to remove temporary file: {e}")
 
+async def process_predefined_format_file(predefined_format_file):
+    try:
+        mime_type = predefined_format_file.type
+        logger.info(f"Processing predefined format file with MIME type: {mime_type}")
+        file_bytes = predefined_format_file.read()
+        result_ocr = None
 
-# Function to process uploaded files and generate initial AI response
-async def process_and_generate_response(uploaded_files, user_inputs, topic, max_tokens=3000):
+        if mime_type in ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"]:
+            result_ocr = await asyncio.to_thread(
+                st.session_state.document_intelligence_manager.analyze_document,
+                document_input=file_bytes,
+                model_type="prebuilt-layout",
+                output_format="markdown",
+            )
+            result_ocr = result_ocr.content
+
+        st.toast(f"Predefined format file '{predefined_format_file.name}' has been successfully processed.", icon="😎")
+        return result_ocr
+    
+    except Exception as e:
+        logger.error(f"Error processing predefined format file {predefined_format_file.name}: {e}")
+        st.toast(f"Error processing predefined format file {predefined_format_file.name}. Please check the logs for more details.")
+        return ""
+
+async def process_and_generate_response(uploaded_files, document_type, document_focus_areas, has_predefined_format, predefined_format_file=None, max_tokens=3000):
     markdown_content = ""
-    semaphore = asyncio.Semaphore(5)  # Limit to 5 concurrent tasks
+    semaphore = asyncio.Semaphore(5)
+
+    with st.spinner("🤖 Processing uploaded files..."):
+        tasks = [process_single_file(semaphore, uploaded_file) for uploaded_file in uploaded_files]
+        results = await asyncio.gather(*tasks)
+
+    for result in results:
+        if result:
+            markdown_content += result + "\n\n"
+
+    if has_predefined_format and predefined_format_file:
+        predefined_format_content = await process_predefined_format_file(predefined_format_file)
+        predefined_format_message = f"Please use the following template content for formatting: {predefined_format_content}"
+    else:
+        predefined_format_message = "Please follow the standard formatting guidelines mentioned."
+
+    enc = tiktoken.get_encoding("cl100k_base")
+    token_count = len(enc.encode(markdown_content))
+
+    st.toast(f"The processed content has a total of {token_count} tokens.", icon="📊")
+
+    query = f"""
+    Given the content extracted from various documents using Optical Character Recognition (OCR) technology and provided in markdown format, your task is to create a high-quality, detailed document. The document type is {document_type}. 
+    The guide should distill complex topics into accessible, step-by-step instructions tailored for users seeking to understand or implement specific processes or concepts.
+
+    Document Focus Areas:
+    {document_focus_areas}
+
+    Formatting Instructions:
+    {predefined_format_message}
+
+    Essential Steps for Crafting the Document:
+
+    1. **Content Synthesis**: Begin by synthesizing the OCR-extracted content. Identify crucial themes, technical concepts, and actionable instructions relevant to Copilot X and productivity enhancement. This synthesis forms the foundation of your document's structure and content focus.
+
+    2. **Target Audience Clarification**: Clearly define the document's target audience. Understanding the audience's technical background, familiarity with Copilot X, and productivity goals is essential for customizing the document's complexity and instructional style.
+
+    3. **Structured Outline Development**: Construct a structured outline to organize the document into coherent sections and subsections. Each section should concentrate on distinct aspects of using Copilot X for productivity, ensuring a logical progression from introductory concepts to advanced applications.
+
+    4. **Document Composition**:
+        a. **Introduction**: Craft an introduction that outlines the document's objectives, the significance of Copilot X for productivity, and what the readers will gain.
+        b. **Detailed Instructions**: Following the outline, elaborate on each section with clear, technical instructions. Incorporate step-by-step processes, code snippets, examples, and best practices specific to Copilot X.
+        c. **Conclusion**: Summarize the key takeaways, suggest further reading or resources, and encourage steps for practical application.
+
+    5. **Comprehensive Review and Enhancement**: Thoroughly review the document to ensure technical accuracy, clarity, and completeness. Revise any sections as necessary, and consider peer or expert feedback for additional insights.
+
+    6. **Final Formatting and Release**: Apply professional formatting to enhance readability and visual appeal. Use diagrams, screenshots, or videos where applicable. Publish the document in a format accessible to your target audience, ensuring it's ready for distribution and application.
+
+    Additional Guidelines:
+
+    - Begin with a clear agenda and systematically develop content within designated sections.
+    - Employ straightforward language while explaining technical details, using examples to demystify complex concepts.
+    - Dedicate ample time to crafting high-quality content, prioritizing accuracy and user engagement.
+    - Base the document explicitly on the OCR content and the nuanced requirements of the user's query regarding {document_type}.
+    - The minimum length of the document should be {max_tokens} tokens.
+    """
+
+    st.session_state.conversation_history.append({"role": "user", "content": query})
+    ai_response = await generate_ai_response(query, generate_system_message(document_type, document_focus_areas))
+
+    st.session_state["ai_response"] = ai_response
+    st.session_state.chat_history.append({"role": "ai", "content": ai_response})
+
+async def process_and_generate_translation(uploaded_files, target_language, max_tokens=3000):
+    markdown_content = ""
+    semaphore = asyncio.Semaphore(5)
+
+    try:
+        with st.spinner("🤖 Processing uploaded files..."):
+            tasks = [process_single_file(semaphore, uploaded_file) for uploaded_file in uploaded_files]
+            results = await asyncio.gather(*tasks)
+
+        for result in results:
+            if result:
+                markdown_content += result + "\n\n"
+
+        if not markdown_content:
+            st.error("No content was extracted from the uploaded files.")
+            return
+
+        enc = tiktoken.get_encoding("cl100k_base")
+        token_count = len(enc.encode(markdown_content))
+
+        if token_count > max_tokens:
+            st.warning(f"The content exceeds the maximum token limit of {max_tokens}. Only the first {max_tokens} tokens will be translated.")
+            markdown_content = markdown_content[:max_tokens]  # Truncate content to max_tokens
+
+        st.toast(f"The processed content has a total of {token_count} tokens.", icon="📊")
+
+        query = f"""
+        Translate the following content into {target_language}. The translation should be accurate, context-aware, and preserve the original meaning and tone of the content.
+        
+        Translation Instructions:
+        Please follow these steps carefully:
+
+        1. Translate the document from the source language to the target language, focusing on a detailed, word-by-word translation.
+        2. Ensure that the translation preserves the original meaning and context of the document.
+        3. Pay attention to any idiomatic expressions, technical terms, or specialized vocabulary to provide accurate and appropriate translations.
+        4. Maintain the document's formatting, structure, and any specific instructions or annotations present in the original text.
+       
+        Content to be Translated:
+        {markdown_content}
+        """
+
+        system_message = f"""
+        You are a professional translator tasked with translating the provided content into {target_language}. Ensure the translation is accurate, context-aware, and preserves the original meaning and tone.
+        """
+
+        st.session_state.conversation_history.append({"role": "user", "content": query})
+        ai_response = await generate_ai_response(query, system_message)
+
+        st.session_state["ai_response"] = ai_response
+        st.session_state.chat_history.append({"role": "ai", "content": ai_response})
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
+
+async def process_and_generate_summarization(uploaded_files, summarization_preference):
+    markdown_content = ""
+    semaphore = asyncio.Semaphore(5)
 
     with st.spinner("🤖 Processing uploaded files..."):
         tasks = [process_single_file(semaphore, uploaded_file) for uploaded_file in uploaded_files]
@@ -374,52 +587,55 @@ async def process_and_generate_response(uploaded_files, user_inputs, topic, max_
     enc = tiktoken.get_encoding("cl100k_base")
     token_count = len(enc.encode(markdown_content))
 
-    st.toast(f"The processed content has total of {token_count} tokens.", icon="📊")
+    st.toast(f"The processed content has a total of {token_count} tokens.", icon="📊")
 
-    query = f"""Given the content extracted from various documents using Optical Character Recognition (OCR) technology and provided in markdown format, your task is to create a high-quality, detailed "How-To" guide. The guide should distill complex topics into accessible, step-by-step instructions tailored for users seeking to understand or implement specific processes or concepts.
-        userinputs: {user_inputs}
-        context: {markdown_content}
+    query = f"""
+    Please summarize the following content. The summarization preference is '{summarization_preference}'.
 
-        Essential Steps for Crafting the Guide:
+    Follow these steps based on the user's preference:
 
-        1. **Content Synthesis**: Begin by synthesizing the OCR-extracted content. Identify crucial themes, technical concepts, and actionable instructions relevant to Copilot X and productivity enhancement. This synthesis forms the foundation of your guide's structure and content focus.
+    1. If the preference is "Brief Overview," provide a concise summary of the content, focusing on the main points and key details in a few sentences.
+    2. If the preference is "Detailed Summary," provide a thorough summary of the content, covering all major points and important details, and aim to capture the essence of the content comprehensively.
+    
+    Begin by identifying the preference, then generate the appropriate summary.
+        
+    Content to be summarized:
+    {markdown_content}
+    """
 
-        2. **Target Audience Clarification**: Clearly define the guide's target audience. Understanding the audience's technical background, familiarity with Copilot X, and productivity goals is essential for customizing the guide's complexity and instructional style.
-
-        3. **Structured Outline Development**: Construct a structured outline to organize the guide into coherent sections and subsections. Each section should concentrate on distinct aspects of using Copilot X for productivity, ensuring a logical progression from introductory concepts to advanced applications.
-
-        4. **Guide Composition**:
-            a. **Introduction**: Craft an introduction that outlines the guide's objectives, the significance of Copilot X for productivity, and what the readers will gain.
-            b. **Detailed Instructions**: Following the outline, elaborate on each section with clear, technical instructions. Incorporate step-by-step processes, code snippets, examples, and best practices specific to Copilot X.
-            c. **Conclusion**: Summarize the key takeaways, suggest further reading or resources, and encourage steps for practical application.
-
-        5. **Comprehensive Review and Enhancement**: Thoroughly review the guide to ensure technical accuracy, clarity, and completeness. Revise any sections as necessary, and consider peer or expert feedback for additional insights.
-
-        6. **Final Formatting and Release**: Apply professional formatting to enhance readability and visual appeal. Use diagrams, screenshots, or videos where applicable. Publish the guide in a format accessible to your target audience, ensuring it's ready for distribution and application.
-
-        Additional Guidelines:
-
-        - Begin with a clear agenda and systematically develop content within designated sections.
-        - Employ straightforward language while explaining technical details, using examples to demystify complex concepts.
-        - Dedicate ample time to crafting high-quality content, prioritizing accuracy and user engagement.
-        - Base the guide explicitly on the OCR content and the nuanced requirements of the user's query regarding {topic}.
-        - minimum length of the document should be {max_tokens} tokens"""
+    system_message = f"""
+    You are an expert summarizer AI. Your task is to summarize the provided content based on the preference '{summarization_preference}'. Ensure the summary is accurate and covers all key points.
+    """
 
     st.session_state.conversation_history.append({"role": "user", "content": query})
-    ai_response = await generate_ai_response(query)
+    ai_response = await generate_ai_response(query, system_message)
 
     st.session_state["ai_response"] = ai_response
-    st.session_state.chat_history.append({"role": "ai", "content": ai_response})
+    st.session_state.chat_history.append({"role": "ai", "content": ai_response})    
 
-
-# Process submission
 if submit_to_ai:
-    if not uploaded_files:
-        st.sidebar.error("Please fill in all the fields and upload a document.")
-    else:
-        asyncio.run(process_and_generate_response(uploaded_files))
+    if operation == "Generate Documentation":
+        if not uploaded_files:
+            st.sidebar.error("Please fill in all the fields and upload a document.")
+        else:
+            asyncio.run(process_and_generate_response(
+                uploaded_files, 
+                document_type, 
+                document_focus_areas, 
+                has_predefined_format, 
+                predefined_format_file=uploaded_file_output_format if has_predefined_format == "Yes" else None
+            ))
+    elif operation == "Translation":
+        if not uploaded_files or not target_language:
+            st.sidebar.error("Please upload a document and specify the target language.")
+        else:
+            asyncio.run(process_and_generate_translation(uploaded_files, target_language))
+    elif operation == "Summarization":
+        if not uploaded_files:
+            st.sidebar.error("Please upload documents for summarization.")
+        else:
+            asyncio.run(process_and_generate_summarization(uploaded_files, summarization_preference))
 
-# Chat interface for feedback and refining output
 if st.session_state.ai_response:
     st.markdown("## AI Response")
     st.markdown(st.session_state.ai_response, unsafe_allow_html=True)
@@ -430,19 +646,17 @@ if st.session_state.ai_response:
         with st.chat_message("user"):
             st.markdown(feedback_prompt)
 
-        ai_response = asyncio.run(generate_ai_response(feedback_prompt))
+        ai_response = asyncio.run(generate_ai_response(feedback_prompt, generate_system_message(document_type, document_focus_areas)))
         st.session_state.ai_response = ai_response
         st.session_state.messages.append({"role": "assistant", "content": ai_response})
 
         st.markdown("### Updated AI Response")
         st.markdown(ai_response, unsafe_allow_html=True)
 
-# Display chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Display download buttons in the sidebar if there is an AI response
 if st.session_state.ai_response:
     with st.sidebar:
         st.markdown("<hr/>", unsafe_allow_html=True)
