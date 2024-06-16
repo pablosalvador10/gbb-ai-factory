@@ -789,7 +789,8 @@ if st.session_state.ai_response:
         <a href="https://www.linkedin.com/in/pablosalvadorlopez/?locale=en_US" target="_blank" style="text-decoration:none; margin: 0 10px;">
             <img src="https://img.icons8.com/fluent/48/000000/linkedin.png" alt="LinkedIn" style="width:40px; height:40px;">
         </a>
-        <a href="https://pablosalvador10.github.io/GenAI-Engineering-Diary/" target="_blank" style="text-decoration:none; margin: 0 10px;">
+        <!-- TODO: Update this link to the correct URL in the future -->
+        <a href="#" target="_blank" style="text-decoration:none; margin: 0 10px;">
             <img src="https://img.icons8.com/?size=100&id=23438&format=png&color=000000" alt="Blog" style="width:40px; height:40px;">
         </a>
     </div>
