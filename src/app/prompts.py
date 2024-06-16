@@ -90,7 +90,7 @@ def get_chat_cosmos_db_prompt(prompt, json_response):
 def generate_system_message(document_type, focus_areas):
     if document_type == "Other":
         document_type = focus_areas
-    
+
     system_messages = {
         "How-to Guide": """
             You are tasked with creating a detailed, user-friendly "How-To" guide based on multiple documents and complex topics. 

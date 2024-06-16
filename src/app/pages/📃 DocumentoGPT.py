@@ -9,10 +9,10 @@ import tiktoken
 
 from src.aoai.azure_openai import AzureOpenAIManager
 from src.app.outputformatting import markdown_to_docx
+from src.app.prompts import generate_system_message
 from src.extractors.blob_data_extractor import AzureBlobDataExtractor
 from src.ocr.document_intelligence import AzureDocumentIntelligenceManager
 from utils.ml_logging import get_logger
-from src.app.prompts import generate_system_message
 
 # Load environment variables
 dotenv.load_dotenv(".env")
@@ -44,28 +44,42 @@ st.set_page_config(
 
 # Check if environment variables have been loaded
 if not st.session_state.get("env_vars_loaded", False):
-    st.session_state.update({
-        "azure_openai_manager": None,
-        "document_intelligence_manager": None,
-        "blob_data_extractor_manager": None,
-    })
+    st.session_state.update(
+        {
+            "azure_openai_manager": None,
+            "document_intelligence_manager": None,
+            "blob_data_extractor_manager": None,
+        }
+    )
 
     if st.session_state["env_vars_load_count_free"] <= 3:
         env_vars = {
             "AZURE_OPENAI_KEY": os.getenv("AZURE_OPENAI_KEY"),
-            "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID": os.getenv("AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"),
+            "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID": os.getenv(
+                "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"
+            ),
             "AZURE_OPENAI_API_ENDPOINT": os.getenv("AZURE_OPENAI_API_ENDPOINT"),
             "AZURE_OPENAI_API_VERSION": os.getenv("AZURE_OPENAI_API_VERSION"),
             "AZURE_BLOB_CONTAINER_NAME": os.getenv("AZURE_BLOB_CONTAINER_NAME"),
-            "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT": os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"),
-            "AZURE_DOCUMENT_INTELLIGENCE_KEY": os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY"),
-            "AZURE_STORAGE_CONNECTION_STRING": os.getenv("AZURE_STORAGE_CONNECTION_STRING"),
-            "AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID": os.getenv("AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID"),
+            "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT": os.getenv(
+                "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"
+            ),
+            "AZURE_DOCUMENT_INTELLIGENCE_KEY": os.getenv(
+                "AZURE_DOCUMENT_INTELLIGENCE_KEY"
+            ),
+            "AZURE_STORAGE_CONNECTION_STRING": os.getenv(
+                "AZURE_STORAGE_CONNECTION_STRING"
+            ),
+            "AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID": os.getenv(
+                "AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID"
+            ),
         }
         st.session_state.update(env_vars)
 
         # Initialize managers
-        st.session_state["document_intelligence_manager"] = AzureDocumentIntelligenceManager(
+        st.session_state[
+            "document_intelligence_manager"
+        ] = AzureDocumentIntelligenceManager(
             azure_endpoint=st.session_state["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"],
             azure_key=st.session_state["AZURE_DOCUMENT_INTELLIGENCE_KEY"],
         )
@@ -77,7 +91,9 @@ if not st.session_state.get("env_vars_loaded", False):
             api_key=st.session_state["AZURE_OPENAI_KEY"],
             azure_endpoint=st.session_state["AZURE_OPENAI_API_ENDPOINT"],
             api_version=st.session_state["AZURE_OPENAI_API_VERSION"],
-            chat_model_name=st.session_state["AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"],
+            chat_model_name=st.session_state[
+                "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"
+            ],
         )
         st.toast(
             f'Free trial: {3 - st.session_state["env_vars_load_count_free"]} runs left. Please visit the main page and update your environment variables for unlimited runs.',
@@ -87,7 +103,9 @@ else:
     try:
         # Reinitialize managers if necessary
         if "document_intelligence_manager" not in st.session_state:
-            st.session_state["document_intelligence_manager"] = AzureDocumentIntelligenceManager(
+            st.session_state[
+                "document_intelligence_manager"
+            ] = AzureDocumentIntelligenceManager(
                 azure_endpoint=st.session_state["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"],
                 azure_key=st.session_state["AZURE_DOCUMENT_INTELLIGENCE_KEY"],
             )
@@ -101,8 +119,12 @@ else:
                 api_key=st.session_state["AZURE_OPENAI_KEY"],
                 azure_endpoint=st.session_state["AZURE_OPENAI_API_ENDPOINT"],
                 api_version=st.session_state["AZURE_OPENAI_API_VERSION"],
-                chat_model_name=st.session_state["AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"],
-                whisper_model_name=st.session_state["AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID"],
+                chat_model_name=st.session_state[
+                    "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"
+                ],
+                whisper_model_name=st.session_state[
+                    "AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID"
+                ],
             )
     except Exception as e:
         st.error(
@@ -205,24 +227,24 @@ with st.sidebar:
             help="Select 'Yes' if you have a specific format in mind and would like to upload a document as a template.",
         )
         if has_predefined_format == "Yes":
-            uploaded_file_output_format= st.sidebar.file_uploader(
+            uploaded_file_output_format = st.sidebar.file_uploader(
                 "Upload your document template",
-                type=['pdf', 'docx', 'txt'],
+                type=["pdf", "docx", "txt"],
                 help="Upload the document that will serve as a template for the output format.",
             )
     elif operation == "Translation":
-            st.markdown(
-                """
+        st.markdown(
+            """
                 <div style="text-align:center; font-size:30px; margin-top:10px;">
                     ...
                 </div>
                 <div style="text-align:center; margin-top:20px;">
             """,
-                unsafe_allow_html=True,
-            )
-            with st.expander("Translation Guide 🌍", expanded=False):
-                st.markdown(
-                    """
+            unsafe_allow_html=True,
+        )
+        with st.expander("Translation Guide 🌍", expanded=False):
+            st.markdown(
+                """
                     Want to translate your documents into another language? Our application can help! 📄✨
 
                     Here's how it works:
@@ -232,43 +254,54 @@ with st.sidebar:
 
                     Ready to get started? Let's go! 🚀
                     """
-                )
-
-                uploaded_files = st.sidebar.file_uploader(
-                    "Upload documents",
-                    type=[
-                        "png",
-                        "jpg",
-                        "jpeg",
-                        "pdf",
-                        "ppt",
-                        "pptx",
-                        "doc",
-                        "docx",
-                        "mp3",
-                        "wav",
-                    ],
-                    accept_multiple_files=True,
-                    help="Upload the documents you want the AI to translate. You can upload multiple documents of types PNG, JPG, JPEG, and PDF.",
-                )
-            target_language = st.sidebar.selectbox(
-                "Target Language",
-                ["English", "Spanish", "French", "German", "Chinese", "Japanese", "Russian", "Italian", "Portuguese", "Arabic"],
-                help="Select the language you want the document to be translated into."
             )
+
+            uploaded_files = st.sidebar.file_uploader(
+                "Upload documents",
+                type=[
+                    "png",
+                    "jpg",
+                    "jpeg",
+                    "pdf",
+                    "ppt",
+                    "pptx",
+                    "doc",
+                    "docx",
+                    "mp3",
+                    "wav",
+                ],
+                accept_multiple_files=True,
+                help="Upload the documents you want the AI to translate. You can upload multiple documents of types PNG, JPG, JPEG, and PDF.",
+            )
+        target_language = st.sidebar.selectbox(
+            "Target Language",
+            [
+                "English",
+                "Spanish",
+                "French",
+                "German",
+                "Chinese",
+                "Japanese",
+                "Russian",
+                "Italian",
+                "Portuguese",
+                "Arabic",
+            ],
+            help="Select the language you want the document to be translated into.",
+        )
     elif operation == "Summarization":
-            st.markdown(
-                """
+        st.markdown(
+            """
                 <div style="text-align:center; font-size:30px; margin-top:10px;">
                     ...
                 </div>
                 <div style="text-align:center; margin-top:20px;">
                 """,
-                unsafe_allow_html=True,
-            )
-            with st.expander("Summarization Guide 📚", expanded=False):
-                st.markdown(
-                    """
+            unsafe_allow_html=True,
+        )
+        with st.expander("Summarization Guide 📚", expanded=False):
+            st.markdown(
+                """
                     Overwhelmed by lengthy documents or numerous articles? Let our AI summarize them for you! 📄➡️📃✨
 
                     Here's how it works:
@@ -278,31 +311,31 @@ with st.sidebar:
 
                     Ready to simplify your reading list? Let's get started! 🚀
                     """
-                )
+            )
 
-                uploaded_files = st.sidebar.file_uploader(
-                    "Upload documents for summarization",
-                    type=[
-                        "png",
-                        "jpg",
-                        "jpeg",
-                        "pdf",
-                        "ppt",
-                        "pptx",
-                        "doc",
-                        "docx",
-                        "mp3",
-                        "wav",
-                    ],
-                    accept_multiple_files=True,
-                    help="Upload the documents you want the AI to summarize. You can upload multiple documents of types PNG, JPG, JPEG, PDF, etc.",
-                )
+            uploaded_files = st.sidebar.file_uploader(
+                "Upload documents for summarization",
+                type=[
+                    "png",
+                    "jpg",
+                    "jpeg",
+                    "pdf",
+                    "ppt",
+                    "pptx",
+                    "doc",
+                    "docx",
+                    "mp3",
+                    "wav",
+                ],
+                accept_multiple_files=True,
+                help="Upload the documents you want the AI to summarize. You can upload multiple documents of types PNG, JPG, JPEG, PDF, etc.",
+            )
 
-                summarization_preference = st.sidebar.selectbox(
-                    "Summarization Preference",
-                    options=["Brief Overview", "Detailed Summary"],
-                    help="Choose whether you want a brief overview or a detailed summary of the documents.",
-                )
+            summarization_preference = st.sidebar.selectbox(
+                "Summarization Preference",
+                options=["Brief Overview", "Detailed Summary"],
+                help="Choose whether you want a brief overview or a detailed summary of the documents.",
+            )
 
     submit_to_ai = st.sidebar.button("Submit to AI")
 
@@ -329,6 +362,7 @@ async def generate_ai_response(user_query, system_message):
         st.error(f"An error occurred while generating the AI response: {e}")
         return None
 
+
 def download_chat_history():
     chat_history_json = json.dumps(st.session_state.messages, indent=2)
     st.download_button(
@@ -338,6 +372,7 @@ def download_chat_history():
         mime="application/json",
         key="download-chat-history",
     )
+
 
 def download_ai_response_as_docx_or_pdf():
     try:
@@ -362,7 +397,10 @@ def download_ai_response_as_docx_or_pdf():
             )
     except Exception as e:
         logger.error(f"Error generating {file_format} file: {e}")
-        st.error(f"❌ Error generating {file_format} file. Please check the logs for more details.")
+        st.error(
+            f"❌ Error generating {file_format} file. Please check the logs for more details."
+        )
+
 
 async def process_single_file(semaphore, uploaded_file):
     async with semaphore:
@@ -371,7 +409,9 @@ async def process_single_file(semaphore, uploaded_file):
             logger.info(f"The MIME type is {mime_type}")
             if mime_type.startswith("audio/"):
                 file_bytes = uploaded_file.read()
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+                with tempfile.NamedTemporaryFile(
+                    delete=False, suffix=".wav"
+                ) as temp_file:
                     temp_file.write(file_bytes)
                     temp_file.flush()
                     os.fsync(temp_file.fileno())
@@ -422,13 +462,19 @@ async def process_single_file(semaphore, uploaded_file):
                 )
                 result_ocr = result_ocr.content
 
-            st.toast(f"Document '{uploaded_file.name}' has been successfully processed.", icon="😎")
+            st.toast(
+                f"Document '{uploaded_file.name}' has been successfully processed.",
+                icon="😎",
+            )
             return result_ocr
 
         except Exception as e:
             logger.error(f"Error processing file {uploaded_file.name}: {e}")
-            st.toast(f"Error processing file {uploaded_file.name}. Please check the logs for more details.")
+            st.toast(
+                f"Error processing file {uploaded_file.name}. Please check the logs for more details."
+            )
             return ""
+
 
 async def process_predefined_format_file(predefined_format_file):
     try:
@@ -437,7 +483,11 @@ async def process_predefined_format_file(predefined_format_file):
         file_bytes = predefined_format_file.read()
         result_ocr = None
 
-        if mime_type in ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"]:
+        if mime_type in [
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "text/plain",
+        ]:
             result_ocr = await asyncio.to_thread(
                 st.session_state.document_intelligence_manager.analyze_document,
                 document_input=file_bytes,
@@ -446,20 +496,38 @@ async def process_predefined_format_file(predefined_format_file):
             )
             result_ocr = result_ocr.content
 
-        st.toast(f"Predefined format file '{predefined_format_file.name}' has been successfully processed.", icon="😎")
+        st.toast(
+            f"Predefined format file '{predefined_format_file.name}' has been successfully processed.",
+            icon="😎",
+        )
         return result_ocr
-    
+
     except Exception as e:
-        logger.error(f"Error processing predefined format file {predefined_format_file.name}: {e}")
-        st.toast(f"Error processing predefined format file {predefined_format_file.name}. Please check the logs for more details.")
+        logger.error(
+            f"Error processing predefined format file {predefined_format_file.name}: {e}"
+        )
+        st.toast(
+            f"Error processing predefined format file {predefined_format_file.name}. Please check the logs for more details."
+        )
         return ""
 
-async def process_and_generate_response(uploaded_files, document_type, document_focus_areas, has_predefined_format, predefined_format_file=None, max_tokens=3000):
+
+async def process_and_generate_response(
+    uploaded_files,
+    document_type,
+    document_focus_areas,
+    has_predefined_format,
+    predefined_format_file=None,
+    max_tokens=3000,
+):
     markdown_content = ""
     semaphore = asyncio.Semaphore(5)
 
     with st.spinner("🤖 Processing uploaded files..."):
-        tasks = [process_single_file(semaphore, uploaded_file) for uploaded_file in uploaded_files]
+        tasks = [
+            process_single_file(semaphore, uploaded_file)
+            for uploaded_file in uploaded_files
+        ]
         results = await asyncio.gather(*tasks)
 
     for result in results:
@@ -467,10 +535,14 @@ async def process_and_generate_response(uploaded_files, document_type, document_
             markdown_content += result + "\n\n"
 
     if has_predefined_format and predefined_format_file:
-        predefined_format_content = await process_predefined_format_file(predefined_format_file)
+        predefined_format_content = await process_predefined_format_file(
+            predefined_format_file
+        )
         predefined_format_message = f"Please use the following template content for formatting: {predefined_format_content}"
     else:
-        predefined_format_message = "Please follow the standard formatting guidelines mentioned."
+        predefined_format_message = (
+            "Please follow the standard formatting guidelines mentioned."
+        )
 
     enc = tiktoken.get_encoding("cl100k_base")
     token_count = len(enc.encode(markdown_content))
@@ -514,18 +586,26 @@ async def process_and_generate_response(uploaded_files, document_type, document_
     """
 
     st.session_state.conversation_history.append({"role": "user", "content": query})
-    ai_response = await generate_ai_response(query, generate_system_message(document_type, document_focus_areas))
+    ai_response = await generate_ai_response(
+        query, generate_system_message(document_type, document_focus_areas)
+    )
 
     st.session_state["ai_response"] = ai_response
     st.session_state.chat_history.append({"role": "ai", "content": ai_response})
 
-async def process_and_generate_translation(uploaded_files, target_language, max_tokens=3000):
+
+async def process_and_generate_translation(
+    uploaded_files, target_language, max_tokens=3000
+):
     markdown_content = ""
     semaphore = asyncio.Semaphore(5)
 
     try:
         with st.spinner("🤖 Processing uploaded files..."):
-            tasks = [process_single_file(semaphore, uploaded_file) for uploaded_file in uploaded_files]
+            tasks = [
+                process_single_file(semaphore, uploaded_file)
+                for uploaded_file in uploaded_files
+            ]
             results = await asyncio.gather(*tasks)
 
         for result in results:
@@ -540,10 +620,16 @@ async def process_and_generate_translation(uploaded_files, target_language, max_
         token_count = len(enc.encode(markdown_content))
 
         if token_count > max_tokens:
-            st.warning(f"The content exceeds the maximum token limit of {max_tokens}. Only the first {max_tokens} tokens will be translated.")
-            markdown_content = markdown_content[:max_tokens]  # Truncate content to max_tokens
+            st.warning(
+                f"The content exceeds the maximum token limit of {max_tokens}. Only the first {max_tokens} tokens will be translated."
+            )
+            markdown_content = markdown_content[
+                :max_tokens
+            ]  # Truncate content to max_tokens
 
-        st.toast(f"The processed content has a total of {token_count} tokens.", icon="📊")
+        st.toast(
+            f"The processed content has a total of {token_count} tokens.", icon="📊"
+        )
 
         query = f"""
         Translate the following content into {target_language}. The translation should be accurate, context-aware, and preserve the original meaning and tone of the content.
@@ -572,12 +658,16 @@ async def process_and_generate_translation(uploaded_files, target_language, max_
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
 
+
 async def process_and_generate_summarization(uploaded_files, summarization_preference):
     markdown_content = ""
     semaphore = asyncio.Semaphore(5)
 
     with st.spinner("🤖 Processing uploaded files..."):
-        tasks = [process_single_file(semaphore, uploaded_file) for uploaded_file in uploaded_files]
+        tasks = [
+            process_single_file(semaphore, uploaded_file)
+            for uploaded_file in uploaded_files
+        ]
         results = await asyncio.gather(*tasks)
 
     for result in results:
@@ -611,30 +701,43 @@ async def process_and_generate_summarization(uploaded_files, summarization_prefe
     ai_response = await generate_ai_response(query, system_message)
 
     st.session_state["ai_response"] = ai_response
-    st.session_state.chat_history.append({"role": "ai", "content": ai_response})    
+    st.session_state.chat_history.append({"role": "ai", "content": ai_response})
+
 
 if submit_to_ai:
     if operation == "Generate Documentation":
         if not uploaded_files:
             st.sidebar.error("Please fill in all the fields and upload a document.")
         else:
-            asyncio.run(process_and_generate_response(
-                uploaded_files, 
-                document_type, 
-                document_focus_areas, 
-                has_predefined_format, 
-                predefined_format_file=uploaded_file_output_format if has_predefined_format == "Yes" else None
-            ))
+            asyncio.run(
+                process_and_generate_response(
+                    uploaded_files,
+                    document_type,
+                    document_focus_areas,
+                    has_predefined_format,
+                    predefined_format_file=uploaded_file_output_format
+                    if has_predefined_format == "Yes"
+                    else None,
+                )
+            )
     elif operation == "Translation":
         if not uploaded_files or not target_language:
-            st.sidebar.error("Please upload a document and specify the target language.")
+            st.sidebar.error(
+                "Please upload a document and specify the target language."
+            )
         else:
-            asyncio.run(process_and_generate_translation(uploaded_files, target_language))
+            asyncio.run(
+                process_and_generate_translation(uploaded_files, target_language)
+            )
     elif operation == "Summarization":
         if not uploaded_files:
             st.sidebar.error("Please upload documents for summarization.")
         else:
-            asyncio.run(process_and_generate_summarization(uploaded_files, summarization_preference))
+            asyncio.run(
+                process_and_generate_summarization(
+                    uploaded_files, summarization_preference
+                )
+            )
 
 if st.session_state.ai_response:
     st.markdown("## AI Response")
@@ -646,7 +749,12 @@ if st.session_state.ai_response:
         with st.chat_message("user"):
             st.markdown(feedback_prompt)
 
-        ai_response = asyncio.run(generate_ai_response(feedback_prompt, generate_system_message(document_type, document_focus_areas)))
+        ai_response = asyncio.run(
+            generate_ai_response(
+                feedback_prompt,
+                generate_system_message(document_type, document_focus_areas),
+            )
+        )
         st.session_state.ai_response = ai_response
         st.session_state.messages.append({"role": "assistant", "content": ai_response})
 
