@@ -7,8 +7,10 @@ import streamlit as st
 
 from src.aoai.azure_openai import AzureOpenAIManager
 from src.extractors.blob_data_extractor import AzureBlobDataExtractor
+from src.app.utilsapp import send_email
 from src.ocr.document_intelligence import AzureDocumentIntelligenceManager
 
+FROM_EMAIL = "Pablosalvadorlopez@outlook.com"
 
 # Function to convert image to base64
 def get_image_base64(image_path):
@@ -57,25 +59,22 @@ with st.sidebar.expander("We value your feedback! 😊", expanded=False):
         )
         submitted = st.form_submit_button("Submit")
         if submitted:
-            # Create the email message
-            msg = MIMEMultipart()
-            msg["From"] = "your-email@example.com"
-            msg["To"] = "your-email@example.com"  # Send to your own email
-            msg["Subject"] = feedback_subject
-            body = "Feedback: " + feedback_text
-            msg.attach(MIMEText(body, "plain"))
+            if feedback_subject and feedback_text:  # Check if both subject and feedback are provided
+                to_emails = ["pablosal@microsoft.com"]
+                subject = feedback_subject
+                response = "Feedback: " + feedback_text
 
-            # Send the email
-            server = smtplib.SMTP("smtp.example.com", 587)
-            server.starttls()
-            server.login("your-email@example.com", "your-password")
-            text = msg.as_string()
-            server.sendmail(
-                "your-email@example.com", "your-email@example.com", text
-            )  # Send to your own email
-            server.quit()
+                with st.spinner("Sending feedback to the team..."):
+                    send_email(
+                        response=response,
+                        from_email=FROM_EMAIL,
+                        to_emails=[to_emails],  # Adjusted to match expected List[str] type
+                        subject=subject
+                    )
 
-            st.success("Thank you for your feedback!")
+                st.success("Thank you for your feedback!")
+            else:
+                st.error("Please provide both a subject and feedback before submitting.")
 
 with st.sidebar.expander("Add Required Environment Variables ⚙️", expanded=False):
     st.markdown(

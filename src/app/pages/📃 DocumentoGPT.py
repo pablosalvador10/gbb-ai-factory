@@ -13,6 +13,9 @@ from src.app.prompts import generate_system_message
 from src.extractors.blob_data_extractor import AzureBlobDataExtractor
 from src.ocr.document_intelligence import AzureDocumentIntelligenceManager
 from utils.ml_logging import get_logger
+from src.app.utilsapp import send_email
+
+FROM_EMAIL = "Pablosalvadorlopez@outlook.com"
 
 # Load environment variables
 dotenv.load_dotenv(".env")
@@ -772,7 +775,9 @@ if st.session_state.ai_response:
             download_ai_response_as_docx_or_pdf()
             download_chat_history()
 
-st.sidebar.write(
+    
+    # Enhanced Feedback and Contact Section
+    st.sidebar.write(
     """
     <div style="text-align:center; font-size:30px; margin-top:10px;">
         ...
