@@ -21,4 +21,5 @@ matplotlib
 seaborn
 tiktoken
 aiofiles 
+pyautogen
 asyncio

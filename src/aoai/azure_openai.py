@@ -226,6 +226,94 @@ class AzureOpenAIManager:
             print(f"An error occurred: {str(e)}")
 
         return response
+    
+    def generate_image(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        n: Optional[int] = 1,
+        quality: Optional[str] = None,
+        response_format: Optional[str] = None,
+        size: Optional[str] = None,
+        style: Optional[str] = None,
+        user: Optional[str] = None,
+        extra_headers: Optional[dict] = None,
+        extra_query: Optional[dict] = None,
+        extra_body: Optional[dict] = None,
+        timeout: Optional[float] = None,
+        show_picture: Optional[bool] = False,
+    ) -> Optional[str]:
+        """
+        Generates an image for the given prompt using Azure OpenAI's DALL-E model.
+
+        :param prompt: A text description of the desired image(s).
+        :param model: The model to use for image generation.
+        :param n: The number of images to generate.
+        :param quality: The quality of the image that will be generated. 'hd' creates images with finer details and greater consistency across the image.
+            This param is only supported for 'dall-e-3'.
+        :param response_format: The format in which the generated images are returned.
+            Must be one of 'url' or 'b64_json'.
+        :param size: The size of the generated images. Must be one of '256x256', '512x512', or '1024x1024' for 'dall-e-2'.
+            Must be one of '1024x1024', '1792x1024', or '1024x1792' for 'dall-e-3' models.
+        :param style: The style of the generated images. Must be one of 'vivid' or 'natural'.
+            'Vivid' causes the model to lean towards generating hyper-real and dramatic images.
+            'Natural' causes the model to produce more natural, less hyper-real looking images. This param is only supported for 'dall-e-3'.
+        :param user: A unique identifier representing your end-user.
+        :param extra_headers: Send extra headers.
+        :param extra_query: Add additional query parameters to the request.
+        :param extra_body: Add additional JSON properties to the request.
+        :param timeout: Override the client-level default timeout for this request, in seconds.
+        :return: The URL of the generated image, or None if an error occurred.
+        :raises Exception: If an error occurs while making the API request.
+        """
+        try:
+            response = self.openai_client.images.generate(
+                prompt=prompt,
+                model=model or self.dalle_model_name,
+                n=n,
+                quality=quality,
+                response_format=response_format,
+                size=size,
+                style=style,
+                user=user,
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body=extra_body,
+                timeout=timeout,
+            )
+            image_url = json.loads(response.model_dump_json())["data"][0]["url"]
+            logger.info(f"Generated image URL: {image_url}")
+
+            if show_picture:
+                response_image = requests.get(image_url)
+                img = mpimg.imread(BytesIO(response_image.content))
+
+                # Create a new figure and add the image to it
+                fig = plt.figure(frameon=False)
+                ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
+                ax.set_axis_off()
+                fig.add_axes(ax)
+
+                # Display the image
+                ax.imshow(img, aspect="auto")
+                plt.show()
+
+            return image_url
+        except openai.APIConnectionError as e:
+            logger.error("The server could not be reached")
+            logger.error(e.__cause__)
+            return None
+        except openai.RateLimitError:
+            logger.error("A 429 status code was received; we should back off a bit.")
+            return None
+        except openai.APIStatusError as e:
+            logger.error("Another non-200-range status code was received")
+            logger.error(e.status_code)
+            logger.error(e.response)
+            return None
+        except Exception as e:
+            logger.error(f"OpenAI API error: {e}")
+            return None
 
     def transcribe_audio_with_whisper(
         self,
