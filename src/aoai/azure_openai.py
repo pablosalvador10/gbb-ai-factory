@@ -232,16 +232,16 @@ class AzureOpenAIManager:
         prompt: str,
         model: Optional[str] = None,
         n: Optional[int] = 1,
-        quality: Optional[str] = None,
-        response_format: Optional[str] = None,
-        size: Optional[str] = None,
-        style: Optional[str] = None,
+        quality: Literal['standard', 'hd'] = 'hd',
+        size: Literal['256x256', '512x512', '1024x1024', '1792x1024', '1024x1792'] = '1024x1024',
+        style: Literal['vivid', 'natural'] = 'vivid',
         user: Optional[str] = None,
         extra_headers: Optional[dict] = None,
         extra_query: Optional[dict] = None,
         extra_body: Optional[dict] = None,
         timeout: Optional[float] = None,
         show_picture: Optional[bool] = False,
+        response_format: Optional[str] = None,
     ) -> Optional[str]:
         """
         Generates an image for the given prompt using Azure OpenAI's DALL-E model.
@@ -392,7 +392,7 @@ class AzureOpenAIManager:
         top_p: float = 1.0,
         stream: bool = False,
         **kwargs,
-    ) -> Optional[str]:
+    ) -> Union[Optional[str],Optional[str]]:
         """
         Generates a text response considering the conversation history.
 
@@ -485,18 +485,18 @@ class AzureOpenAIManager:
         except openai.APIConnectionError as e:
             logger.error("The server could not be reached")
             logger.error(e.__cause__)
-            return None
+            return None, None
         except openai.RateLimitError:
             logger.error("A 429 status code was received; we should back off a bit.")
-            return None
+            return None, None
         except openai.APIStatusError as e:
             logger.error("Another non-200-range status code was received")
             logger.error(e.status_code)
             logger.error(e.response)
-            return None
+            return None, None
         except Exception as e:
             logger.error(f"Contextual response generation error: {e}")
-            return None
+            return None, None
 
     def generate_image(
         self,

@@ -84,6 +84,7 @@ class AzureDalleImageGenerator:
         llm_config: Dict[str, Any],
         resolution: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1024x1024",
         quality: Literal["standard", "hd"] = "standard",
+        style: Literal["vivid", "natural"] = "natural",
         num_images: int = 1,
     ):
         """
@@ -99,6 +100,7 @@ class AzureDalleImageGenerator:
         self._resolution = resolution
         self._quality = quality
         self._num_images = num_images
+        self._style = style  # Assigning the new style parameter
         self._api_key = config_list[0]["api_key"]
         self._api_endpoint = config_list[0]["base_url"]
         self._api_version = config_list[0]["api_version"]
@@ -121,7 +123,12 @@ class AzureDalleImageGenerator:
         Raises:
             ValueError: If the image generation fails.
         """
-        image_url = self.az_manager.generate_image(prompt=prompt, n=self._num_images, show_picture=True)
+        image_url = self.az_manager.generate_image(prompt=prompt, 
+                                                   n=self._num_images,
+                                                   quality=self._quality,
+                                                   style=self._style,
+                                                   size=self._resolution, 
+                                                   show_picture=True)
         if image_url is None:
             raise ValueError("Failed to generate image.")
 
