@@ -10,12 +10,12 @@ Welcome to the AI Factory project! This repository is designed to help you culti
 
 ## 🛠️ Explore Our Capabilities 🌟
 
-Dive into the innovative world of Documentto GPT and Sketch GPT, where your ideas are transformed into reality. Here's a glimpse of what these groundbreaking technologies offer today, with even more advancements on the horizon:
+Dive into the DocumentoGPT and SketchGPT..
 
 ![Welcome to AI Factory](utils/images/welcome_to_AI_Factory.png)
 
 > 🚧 **Note: Work in Progress**  
-> This project is actively evolving. Your feedback is crucial to our development. Please see below for details on how to contribute.
+> This project is actively evolving. Please see below for details on how to contribute and provide feedback.
 
 ### DocumentoGPT: Your AI Assistant for Content Creation
 
