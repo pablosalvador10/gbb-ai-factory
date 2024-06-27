@@ -15,8 +15,6 @@ from src.ocr.document_intelligence import AzureDocumentIntelligenceManager
 from utils.ml_logging import get_logger
 from src.app.utilsapp import send_email
 
-FROM_EMAIL = "Pablosalvadorlopez@outlook.com"
-
 # Load environment variables
 dotenv.load_dotenv(".env")
 
@@ -54,42 +52,41 @@ if not st.session_state.get("env_vars_loaded", False):
             "blob_data_extractor_manager": None,
         }
     )
-
-    if st.session_state["env_vars_load_count_free"] <= 3:
-        env_vars = {
-            "AZURE_OPENAI_KEY": os.getenv("AZURE_OPENAI_KEY"),
-            "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID": os.getenv(
-                "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"
-            ),
-            "AZURE_OPENAI_API_ENDPOINT": os.getenv("AZURE_OPENAI_API_ENDPOINT"),
-            "AZURE_OPENAI_API_VERSION": os.getenv("AZURE_OPENAI_API_VERSION"),
-            "AZURE_BLOB_CONTAINER_NAME": os.getenv("AZURE_BLOB_CONTAINER_NAME"),
-            "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT": os.getenv(
-                "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"
-            ),
-            "AZURE_DOCUMENT_INTELLIGENCE_KEY": os.getenv(
-                "AZURE_DOCUMENT_INTELLIGENCE_KEY"
-            ),
-            "AZURE_STORAGE_CONNECTION_STRING": os.getenv(
-                "AZURE_STORAGE_CONNECTION_STRING"
-            ),
-            "AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID": os.getenv(
-                "AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID"
-            ),
-        }
-        st.session_state.update(env_vars)
-
-        # Initialize managers
-        st.session_state[
-            "document_intelligence_manager"
-        ] = AzureDocumentIntelligenceManager(
-            azure_endpoint=st.session_state["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"],
-            azure_key=st.session_state["AZURE_DOCUMENT_INTELLIGENCE_KEY"],
-        )
+    env_vars = {
+        "AZURE_OPENAI_KEY": os.getenv("AZURE_OPENAI_KEY"),
+        "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID": os.getenv(
+            "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"
+        ),
+        "AZURE_OPENAI_API_ENDPOINT": os.getenv("AZURE_OPENAI_API_ENDPOINT"),
+        "AZURE_OPENAI_API_VERSION": os.getenv("AZURE_OPENAI_API_VERSION"),
+        "AZURE_BLOB_CONTAINER_NAME": os.getenv("AZURE_BLOB_CONTAINER_NAME"),
+        "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT": os.getenv(
+            "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"
+        ),
+        "AZURE_DOCUMENT_INTELLIGENCE_KEY": os.getenv(
+            "AZURE_DOCUMENT_INTELLIGENCE_KEY"
+        ),
+        "AZURE_STORAGE_CONNECTION_STRING": os.getenv(
+            "AZURE_STORAGE_CONNECTION_STRING"
+        ),
+        "AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID": os.getenv(
+            "AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID"
+        ),
+    }
+    st.session_state.update(env_vars)
+    if "document_intelligence_manager" not in st.session_state:
+            st.session_state[
+                "document_intelligence_manager"
+            ] = AzureDocumentIntelligenceManager(
+                azure_endpoint=st.session_state["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"],
+                azure_key=st.session_state["AZURE_DOCUMENT_INTELLIGENCE_KEY"],
+            )
+    if "blob_data_extractor_manager" not in st.session_state:
         st.session_state["blob_data_extractor_manager"] = AzureBlobDataExtractor(
             connect_str=st.session_state["AZURE_STORAGE_CONNECTION_STRING"],
             container_name=st.session_state["AZURE_BLOB_CONTAINER_NAME"],
         )
+    if "azure_openai_manager" not in st.session_state:
         st.session_state["azure_openai_manager"] = AzureOpenAIManager(
             api_key=st.session_state["AZURE_OPENAI_KEY"],
             azure_endpoint=st.session_state["AZURE_OPENAI_API_ENDPOINT"],
@@ -97,10 +94,9 @@ if not st.session_state.get("env_vars_loaded", False):
             chat_model_name=st.session_state[
                 "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"
             ],
-        )
-        st.toast(
-            f'Free trial: {3 - st.session_state["env_vars_load_count_free"]} runs left. Please visit the main page and update your environment variables for unlimited runs.',
-            icon="😎",
+            whisper_model_name=st.session_state[
+                "AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID"
+            ],
         )
 else:
     try:
@@ -354,12 +350,6 @@ async def generate_ai_response(user_query, system_message):
                 max_tokens=3000,
             )
         st.balloons()
-        if st.session_state.get("env_vars_loaded", False):
-            st.session_state["env_vars_load_count_free"] += 1
-            st.toast(
-                f'Free trial: {3 - st.session_state["env_vars_load_count_free"]} runs left. Please visit the main page and update your environment variables for unlimited runs.',
-                icon="😎",
-            )
         return ai_response
     except Exception as e:
         st.error(f"An error occurred while generating the AI response: {e}")

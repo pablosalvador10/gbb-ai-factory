@@ -213,7 +213,7 @@ def critic_agent(CRITIC_SYSTEM_MESSAGE) -> autogen.ConversableAgent:
         name="critic",
         llm_config=st.session_state['llm_config_gpt4o'],
         system_message=CRITIC_SYSTEM_MESSAGE,
-        max_consecutive_auto_reply=5,
+        max_consecutive_auto_reply=3,
         human_input_mode="NEVER",
         is_termination_msg=lambda msg: _is_termination_message(msg),
     )
@@ -222,7 +222,7 @@ def image_generator_agent() -> autogen.ConversableAgent:
     agent = autogen.ConversableAgent(
         name="dalle",
         llm_config=st.session_state['llm_config_gpt4o'],
-        max_consecutive_auto_reply=5,
+        max_consecutive_auto_reply=3,
         human_input_mode="NEVER",
         is_termination_msg=lambda msg: _is_termination_message(msg),
     )

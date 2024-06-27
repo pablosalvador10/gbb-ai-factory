@@ -10,8 +10,6 @@ from src.extractors.blob_data_extractor import AzureBlobDataExtractor
 from src.app.utilsapp import send_email
 from src.ocr.document_intelligence import AzureDocumentIntelligenceManager
 
-FROM_EMAIL = "Pablosalvadorlopez@outlook.com"
-
 # Function to convert image to base64
 def get_image_base64(image_path):
     with open(image_path, "rb") as img_file:
@@ -26,9 +24,6 @@ st.set_page_config(
 # Only set 'env_vars_loaded' to False if it hasn't been set to True
 if not st.session_state.get("env_vars_loaded", False):
     st.session_state["env_vars_loaded"] = False
-# Set 'env_vars_load_count_free' to 0 if it hasn't been set yet
-if st.session_state.get("env_vars_load_count_free") is None:
-    st.session_state["env_vars_load_count_free"] = 0
 
 # Initialize environment variables in session state
 env_vars = {
@@ -46,35 +41,54 @@ for var in env_vars:
     if var not in st.session_state:
         st.session_state[var] = env_vars[var]
 
-# Add Feedback button
-with st.sidebar.expander("We value your feedback! 😊", expanded=False):
-    with st.form("feedback_form"):
-        feedback_subject = st.text_input(
-            "Subject:", value="", help="Enter the subject of your feedback."
-        )
-        feedback_text = st.text_area(
-            "Please enter your feedback:",
-            value="",
-            help="Your feedback helps us improve our services.",
-        )
-        submitted = st.form_submit_button("Submit")
-        if submitted:
-            if feedback_subject and feedback_text:  # Check if both subject and feedback are provided
-                to_emails = ["pablosal@microsoft.com"]
-                subject = feedback_subject
-                response = "Feedback: " + feedback_text
+# TODO: Add Feedback button
+# with st.sidebar.expander("We value your feedback! 😊", expanded=False):
+#     with st.form("feedback_form"):
+#         feedback_subject = st.text_input(
+#             "Subject:", value="", help="Enter the subject of your feedback."
+#         )
+#         feedback_text = st.text_area(
+#             "Please enter your feedback:",
+#             value="",
+#             help="Your feedback helps us improve our services.",
+#         )
+#         submitted = st.form_submit_button("Submit")
+#         if submitted:
+#             if feedback_subject and feedback_text:  # Check if both subject and feedback are provided
+#                 to_emails = ["pablosal@microsoft.com"]
+#                 subject = feedback_subject
+#                 response = "Feedback: " + feedback_text
 
-                with st.spinner("Sending feedback to the team..."):
-                    send_email(
-                        response=response,
-                        from_email=FROM_EMAIL,
-                        to_emails=[to_emails],  # Adjusted to match expected List[str] type
-                        subject=subject
-                    )
+#                 with st.spinner("Sending feedback to the team..."):
+#                     send_email(
+#                         response=response,
+#                         from_email=FROM_EMAIL,
+#                         to_emails=[to_emails],  # Adjusted to match expected List[str] type
+#                         subject=subject
+#                     )
 
-                st.success("Thank you for your feedback!")
-            else:
-                st.error("Please provide both a subject and feedback before submitting.")
+#                 st.success("Thank you for your feedback!")
+#             else:
+#                 st.error("Please provide both a subject and feedback before submitting.")
+
+with st.sidebar.expander("We Value Your Feedback! 🌟", expanded=False):
+            st.markdown(
+                """
+                🐞 **Encountered a bug?** Or 🚀 have a **feature request**? We're all ears!
+
+                Your feedback is crucial in helping us make our service better. If you've stumbled upon an issue or have an idea to enhance our platform, don't hesitate to let us know.
+
+                📝 **Here's how you can help:**
+                - Click on the link below to open a new issue on our GitHub repository.
+                - Provide a detailed description of the bug or the feature you envision. The more details, the better!
+                - Submit your issue. We'll review it as part of our ongoing effort to improve.
+
+                [🔗 Open an Issue on GitHub](https://github.com/pablosalvador10/gbb-ai-factory/issues)
+
+                🙏 **Thank you for contributing!** Your insights are invaluable to us. Together, let's make our service the best it can be!
+                """,
+                unsafe_allow_html=True
+            )
 
 with st.sidebar.expander("Add Required Environment Variables ⚙️", expanded=False):
     st.markdown(
@@ -203,7 +217,7 @@ st.write(
     <h1 style="text-align:center;">
         Welcome to Azure AIFactory! 💡
         <br>
-        <span style="font-style:italic; font-size:0.4em;"> Powered by <a href="https://pablosalvador10.github.io/GenAI-Engineering-Diary/" target="_blank">Microsoft AI Global Black Belt</a> </span> 
+        <span style="font-style:italic; font-size:0.4em;"> Powered by Azure AI services</a> </span> 
         <img src="data:image/png;base64,{get_image_base64('./utils/images/azure_logo.png')}" alt="logo" style="width:30px;height:30px;">        
         <br>
     """,
@@ -215,15 +229,6 @@ st.markdown(
     Your one-stop solution for cultivating new ideas and possibilities with Azure. This is a factory of ideas, demonstrating what's possible and inspiring you to create your own AI applications. The sky is the limit with Azure!
 
     Our goal is to streamline the AI application creation process, reducing both the time and cost involved, while maintaining the highest quality standards. With Azure AIFactory, you can focus on what truly matters - delivering exceptional AI experiences.
-
-    <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); width: 80%; margin: auto;">
-        <iframe src="https://www.loom.com/embed/bd2b310ac6334a0a8da33b59986b2283?sid=f09a505b-e63e-400b-9460-ba039035d8ed" 
-        frameborder="0" 
-        webkitallowfullscreen 
-        mozallowfullscreen 
-        allowfullscreen 
-        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
-    </div>
 
     ### Curious to Learn More?
     - Discover the power of [Azure OpenAI](https://azure.microsoft.com/en-us/services/openai/) and how it's changing the world of AI.
