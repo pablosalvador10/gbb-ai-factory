@@ -12,7 +12,10 @@ Welcome to the AI Factory project! This repository is designed to help you culti
 
 Dive into the innovative world of Documentto GPT and Sketch GPT, where your ideas are transformed into reality. Here's a glimpse of what these groundbreaking technologies offer today, with even more advancements on the horizon:
 
-> 🚧  Note: Work in Progress.. This project is actively evolving, and your feedback is crucial to our progress. Pllease see belo
+![Welcome to AI Factory](utils/images/welcome_to_AI_Factory.png)
+
+> 🚧 **Note: Work in Progress**  
+> This project is actively evolving. Your feedback is crucial to our development. Please see below for details on how to contribute.
 
 ### DocumentoGPT: Your AI Assistant for Content Creation
 
@@ -52,7 +55,7 @@ To activate your Conda environment and run your Streamlit application, follow th
     streamlit run src/app/Home.py
     ```
 
-### Project Evolution: AIFactory's Path Forward 🚀
+## Project Evolution: AIFactory's Path Forward 🚀
 
 **Embrace Continuous Innovation**
 
@@ -62,7 +65,7 @@ The AI Factory is on an exciting journey of growth, blending new ideas, tools, a
 
 Encountered a bump or have ideas for enhancement? Let us know! Please [submit an issue](https://github.com/pablosalvador10/gbb-ai-factory/issues) on our GitHub repository. Your feedback is a cornerstone of our development process.
 
-### 💼 Be Part of Our Journey
+## 💼 Be Part of Our Journey
 
 **Contribute: Make Your Mark**
 
