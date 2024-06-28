@@ -43,44 +43,26 @@ st.set_page_config(
     page_icon="📃",
 )
 
-# Check if environment variables have been loaded
-if not st.session_state.get("env_vars_loaded", False):
-    st.session_state.update(
-        {
-            "azure_openai_manager": None,
-            "document_intelligence_manager": None,
-            "blob_data_extractor_manager": None,
-        }
-    )
+def initialize_session_state():
     env_vars = {
-        "AZURE_OPENAI_KEY": os.getenv("AZURE_OPENAI_KEY"),
-        "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID": os.getenv(
-            "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"
-        ),
-        "AZURE_OPENAI_API_ENDPOINT": os.getenv("AZURE_OPENAI_API_ENDPOINT"),
-        "AZURE_OPENAI_API_VERSION": os.getenv("AZURE_OPENAI_API_VERSION"),
-        "AZURE_BLOB_CONTAINER_NAME": os.getenv("AZURE_BLOB_CONTAINER_NAME"),
-        "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT": os.getenv(
-            "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"
-        ),
-        "AZURE_DOCUMENT_INTELLIGENCE_KEY": os.getenv(
-            "AZURE_DOCUMENT_INTELLIGENCE_KEY"
-        ),
-        "AZURE_STORAGE_CONNECTION_STRING": os.getenv(
-            "AZURE_STORAGE_CONNECTION_STRING"
-        ),
-        "AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID": os.getenv(
-            "AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID"
-        ),
+        "AZURE_OPENAI_KEY": st.session_state.get('AZURE_OPENAI_KEY', os.getenv("AZURE_OPENAI_KEY")),
+        "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID": st.session_state.get('AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID', os.getenv("AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID")),
+        "AZURE_OPENAI_API_ENDPOINT": st.session_state.get('AZURE_OPENAI_API_ENDPOINT', os.getenv("AZURE_OPENAI_API_ENDPOINT")),
+        "AZURE_OPENAI_API_VERSION": st.session_state.get('AZURE_OPENAI_API_VERSION', os.getenv("AZURE_OPENAI_API_VERSION")),
+        "AZURE_BLOB_CONTAINER_NAME": st.session_state.get('AZURE_BLOB_CONTAINER_NAME', os.getenv("AZURE_BLOB_CONTAINER_NAME")),
+        "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT": st.session_state.get('AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT', os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT")),
+        "AZURE_DOCUMENT_INTELLIGENCE_KEY": st.session_state.get('AZURE_DOCUMENT_INTELLIGENCE_KEY', os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY")),
+        "AZURE_STORAGE_CONNECTION_STRING": st.session_state.get('AZURE_STORAGE_CONNECTION_STRING', os.getenv("AZURE_STORAGE_CONNECTION_STRING")),
+        "AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID": st.session_state.get('AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID', os.getenv("AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID")),
     }
     st.session_state.update(env_vars)
+
+    # Initialize managers if they haven't been initialized yet
     if "document_intelligence_manager" not in st.session_state:
-            st.session_state[
-                "document_intelligence_manager"
-            ] = AzureDocumentIntelligenceManager(
-                azure_endpoint=st.session_state["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"],
-                azure_key=st.session_state["AZURE_DOCUMENT_INTELLIGENCE_KEY"],
-            )
+        st.session_state["document_intelligence_manager"] = AzureDocumentIntelligenceManager(
+            azure_endpoint=st.session_state["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"],
+            azure_key=st.session_state["AZURE_DOCUMENT_INTELLIGENCE_KEY"],
+        )
     if "blob_data_extractor_manager" not in st.session_state:
         st.session_state["blob_data_extractor_manager"] = AzureBlobDataExtractor(
             connect_str=st.session_state["AZURE_STORAGE_CONNECTION_STRING"],
@@ -91,44 +73,14 @@ if not st.session_state.get("env_vars_loaded", False):
             api_key=st.session_state["AZURE_OPENAI_KEY"],
             azure_endpoint=st.session_state["AZURE_OPENAI_API_ENDPOINT"],
             api_version=st.session_state["AZURE_OPENAI_API_VERSION"],
-            chat_model_name=st.session_state[
-                "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"
-            ],
-            whisper_model_name=st.session_state[
-                "AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID"
-            ],
+            chat_model_name=st.session_state["AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"],
+            whisper_model_name=st.session_state["AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID"],
         )
-else:
-    try:
-        # Reinitialize managers if necessary
-        if "document_intelligence_manager" not in st.session_state:
-            st.session_state[
-                "document_intelligence_manager"
-            ] = AzureDocumentIntelligenceManager(
-                azure_endpoint=st.session_state["AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"],
-                azure_key=st.session_state["AZURE_DOCUMENT_INTELLIGENCE_KEY"],
-            )
-        if "blob_data_extractor_manager" not in st.session_state:
-            st.session_state["blob_data_extractor_manager"] = AzureBlobDataExtractor(
-                connect_str=st.session_state["AZURE_STORAGE_CONNECTION_STRING"],
-                container_name=st.session_state["AZURE_BLOB_CONTAINER_NAME"],
-            )
-        if "azure_openai_manager" not in st.session_state:
-            st.session_state["azure_openai_manager"] = AzureOpenAIManager(
-                api_key=st.session_state["AZURE_OPENAI_KEY"],
-                azure_endpoint=st.session_state["AZURE_OPENAI_API_ENDPOINT"],
-                api_version=st.session_state["AZURE_OPENAI_API_VERSION"],
-                chat_model_name=st.session_state[
-                    "AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"
-                ],
-                whisper_model_name=st.session_state[
-                    "AZURE_AOAI_WHISPER_MODEL_DEPLOYMENT_ID"
-                ],
-            )
-    except Exception as e:
-        st.error(
-            f"An error occurred: {str(e)}. Please ensure all environment variables are correctly set and accessible. If necessary, visit the introduction main page to update your environment variables."
-        )
+
+try:
+    initialize_session_state()
+except Exception as e:
+    st.error(f"An error occurred: {str(e)}. Please check your environment variables and try again.")
 
 # Main layout for initial submission
 with st.expander("What Can I Do? 🤔", expanded=False):
@@ -221,10 +173,11 @@ with st.sidebar:
             help="Detailing the topics, questions, and areas you want the document to cover helps in creating content that meets your exact needs. Entering 'N/A' allows the AI to select topics for you.",
         )
         has_predefined_format = st.sidebar.radio(
-            "Do you have a predefined output format?",
-            options=["Yes", "No"],
-            help="Select 'Yes' if you have a specific format in mind and would like to upload a document as a template.",
-        )
+                    "Do you have a predefined output format?",
+                    options=["Yes", "No"],
+                    index=1,
+                    help="Select 'Yes' if you have a specific format in mind and would like to upload a document as a template.",
+                )
         if has_predefined_format == "Yes":
             uploaded_file_output_format = st.sidebar.file_uploader(
                 "Upload your document template",
@@ -540,43 +493,50 @@ async def process_and_generate_response(
     enc = tiktoken.get_encoding("cl100k_base")
     token_count = len(enc.encode(markdown_content))
 
+    if token_count > 125000:
+        st.error('''Content exceeds the maximum allowed token count of 12,500. Please submit less content by reducing the number of files. 
+                 We are working on expanding the limits.''')
+
     st.toast(f"The processed content has a total of {token_count} tokens.", icon="📊")
 
     query = f"""
-    Given the content extracted from various documents using Optical Character Recognition (OCR) technology and provided in markdown format, your task is to create a high-quality, detailed document. The document type is {document_type}. 
-    The guide should distill complex topics into accessible, step-by-step instructions tailored for users seeking to understand or implement specific processes or concepts.
+        Given the content extracted from various documents using Optical Character Recognition (OCR) technology and provided in markdown format, your task is to create a high-quality, detailed document. The document type is {document_type}. 
+        The guide should distill complex topics into accessible, step-by-step instructions tailored for users seeking to understand or implement specific processes or concepts.
 
-    Document Focus Areas:
-    {document_focus_areas}
+        Document Focus Areas:
+        {document_focus_areas}
 
-    Formatting Instructions:
-    {predefined_format_message}
+        Formatting Instructions:
+        {predefined_format_message}
 
-    Essential Steps for Crafting the Document:
+        OCR Extracted Content provided by user: 
+        {markdown_content}
 
-    1. **Content Synthesis**: Begin by synthesizing the OCR-extracted content. Identify crucial themes, technical concepts, and actionable instructions relevant to Copilot X and productivity enhancement. This synthesis forms the foundation of your document's structure and content focus.
+        Essential Steps for Crafting the Document:
 
-    2. **Target Audience Clarification**: Clearly define the document's target audience. Understanding the audience's technical background, familiarity with Copilot X, and productivity goals is essential for customizing the document's complexity and instructional style.
+        1. **Content Synthesis**: Begin by synthesizing the OCR-extracted content. Identify crucial themes, technical concepts, and actionable instructions relevant to the document's subject. This synthesis forms the foundation of your document's structure and content focus.
 
-    3. **Structured Outline Development**: Construct a structured outline to organize the document into coherent sections and subsections. Each section should concentrate on distinct aspects of using Copilot X for productivity, ensuring a logical progression from introductory concepts to advanced applications.
+        2. **Target Audience Clarification**: Clearly define the document's target audience. Understanding the audience's technical background, familiarity with the subject matter, and goals is essential for customizing the document's complexity and instructional style.
 
-    4. **Document Composition**:
-        a. **Introduction**: Craft an introduction that outlines the document's objectives, the significance of Copilot X for productivity, and what the readers will gain.
-        b. **Detailed Instructions**: Following the outline, elaborate on each section with clear, technical instructions. Incorporate step-by-step processes, code snippets, examples, and best practices specific to Copilot X.
-        c. **Conclusion**: Summarize the key takeaways, suggest further reading or resources, and encourage steps for practical application.
+        3. **Structured Outline Development**: Construct a structured outline to organize the document into coherent sections and subsections. Each section should concentrate on distinct aspects of the subject matter, ensuring a logical progression from introductory concepts to advanced applications.
 
-    5. **Comprehensive Review and Enhancement**: Thoroughly review the document to ensure technical accuracy, clarity, and completeness. Revise any sections as necessary, and consider peer or expert feedback for additional insights.
+        4. **Document Composition**:
+            a. **Introduction**: Craft an introduction that outlines the document's objectives, the significance of the subject matter for the intended audience, and what the readers will gain.
+            b. **Detailed Instructions**: Following the outline, elaborate on each section with clear, technical instructions. Incorporate step-by-step processes, examples, and best practices specific to the subject matter.
+            c. **Conclusion**: Summarize the key takeaways, suggest further reading or resources, and encourage steps for practical application.
 
-    6. **Final Formatting and Release**: Apply professional formatting to enhance readability and visual appeal. Use diagrams, screenshots, or videos where applicable. Publish the document in a format accessible to your target audience, ensuring it's ready for distribution and application.
+        5. **Comprehensive Review and Enhancement**: Thoroughly review the document to ensure technical accuracy, clarity, and completeness. Revise any sections as necessary, and consider peer or expert feedback for additional insights.
 
-    Additional Guidelines:
+        6. **Final Formatting and Release**: Apply professional formatting to enhance readability and visual appeal. Use diagrams, screenshots, or videos where applicable. Publish the document in a format accessible to your target audience, ensuring it's ready for distribution and application.
 
-    - Begin with a clear agenda and systematically develop content within designated sections.
-    - Employ straightforward language while explaining technical details, using examples to demystify complex concepts.
-    - Dedicate ample time to crafting high-quality content, prioritizing accuracy and user engagement.
-    - Base the document explicitly on the OCR content and the nuanced requirements of the user's query regarding {document_type}.
-    - The minimum length of the document should be {max_tokens} tokens.
-    """
+        Additional Guidelines:
+
+        - Begin with a clear agenda and systematically develop content within designated sections.
+        - Employ straightforward language while explaining technical details, using examples to demystify complex concepts.
+        - Dedicate ample time to crafting high-quality content, prioritizing accuracy and user engagement.
+        - Base the document explicitly on the OCR content and the nuanced requirements of the user's query regarding {document_type}.
+        - The minimum length of the document should be {max_tokens} tokens.
+        """
 
     st.session_state.conversation_history.append({"role": "user", "content": query})
     ai_response = await generate_ai_response(

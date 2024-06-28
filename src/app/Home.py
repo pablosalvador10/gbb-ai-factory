@@ -236,11 +236,13 @@ st.markdown(
     - Join the conversation in our [community forums](https://discuss.streamlit.io) where experts and enthusiasts discuss the latest trends and challenges in AI.
 
     #### Getting Started
-    To get the most out of Azure AIFactory, you'll need a few keys. Here's how you can obtain them:
+    To get the most out of Azure AIFactory, you'll need a few keys.
+        Here's how you can obtain them: 
     - **Azure OpenAI Key**: Sign up for Azure OpenAI and [get your key here](https://azure.microsoft.com/en-us/services/openai/).
     - **Azure Storage Connection String**: Follow the [Azure Storage documentation](https://docs.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage) to set up your storage and obtain your connection string.
     - **Document Intelligence API**: Get your API key and endpoint by following the [Azure Document Intelligence documentation](https://docs.microsoft.com/en-us/azure/cognitive-services/form-recognizer/).
 
+    👈 Please go to the sidebar to add your keys.
     Embark on your journey with Azure AIFactory and transform the way you create AI applications!
     """,
     unsafe_allow_html=True,

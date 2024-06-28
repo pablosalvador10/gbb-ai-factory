@@ -25,26 +25,19 @@ quality_options: Literal['standard', 'hd'] = ['standard', 'hd']
 size_options: Literal['256x256', '512x512', '1024x1024', '1792x1024', '1024x1792'] = ['256x256', '512x512', '1024x1024', '1792x1024', '1024x1792']
 style_options: Literal['vivid', 'natural'] = ['vivid', 'natural']
 
-# Azure Open AI Completion Configuration
-AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_KEY")
-AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID = os.getenv("AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID")
-AZURE_OPENAI_API_ENDPOINT = os.getenv("AZURE_OPENAI_API_ENDPOINT")
-AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
-AZURE_AOAI_KEY_VISION = os.getenv("AZURE_AOAI_KEY_VISION")
-AZURE_AOAI_API_VERSION_VISION = os.getenv("AZURE_AOAI_API_VERSION_VISION")
-AZURE_AOAI_API_ENDPOINT_VISION = os.getenv("AZURE_AOAI_API_ENDPOINT_VISION")
-AZURE_AOAI_DALLE_MODEL_DEPLOYMENT_ID = os.getenv("AZURE_AOAI_DALLE_MODEL_DEPLOYMENT_ID")
 
-# Initialize session state
-if "env_vars_loaded" not in st.session_state:
-    st.session_state.env_vars_loaded = False
+def initialize_session_state():
+    AZURE_OPENAI_KEY = st.session_state.get('AZURE_OPENAI_KEY', os.getenv("AZURE_OPENAI_KEY"))
+    AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID = st.session_state.get('AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID', os.getenv("AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"))
+    AZURE_OPENAI_API_ENDPOINT = st.session_state.get('AZURE_OPENAI_API_ENDPOINT', os.getenv("AZURE_OPENAI_API_ENDPOINT"))
+    AZURE_OPENAI_API_VERSION = st.session_state.get('AZURE_OPENAI_API_VERSION', os.getenv("AZURE_OPENAI_API_VERSION"))
+    AZURE_AOAI_KEY_VISION = st.session_state.get('AZURE_AOAI_KEY_VISION', os.getenv("AZURE_AOAI_KEY_VISION"))
+    AZURE_AOAI_API_VERSION_VISION = st.session_state.get('AZURE_AOAI_API_VERSION_VISION', os.getenv("AZURE_AOAI_API_VERSION_VISION"))
+    AZURE_AOAI_API_ENDPOINT_VISION = st.session_state.get('AZURE_AOAI_API_ENDPOINT_VISION', os.getenv("AZURE_AOAI_API_ENDPOINT_VISION"))
+    AZURE_AOAI_DALLE_MODEL_DEPLOYMENT_ID = st.session_state.get('AZURE_AOAI_DALLE_MODEL_DEPLOYMENT_ID', os.getenv("AZURE_AOAI_DALLE_MODEL_DEPLOYMENT_ID"))
 
-if not st.session_state.env_vars_loaded:
-    st.session_state.update(
-        {
-            "azure_openai_manager": None,
-        }
-    )
+    if "env_vars_loaded" not in st.session_state:
+        st.session_state.env_vars_loaded = False
 
     env_vars = {
         "AZURE_OPENAI_KEY": AZURE_OPENAI_KEY,
@@ -58,37 +51,44 @@ if not st.session_state.env_vars_loaded:
     }
     st.session_state.update(env_vars)
 
-    st.session_state["azure_openai_manager"] = AzureOpenAIManager(
-        api_key=st.session_state["AZURE_OPENAI_KEY"],
-        azure_endpoint=st.session_state["AZURE_OPENAI_API_ENDPOINT"],
-        api_version=st.session_state["AZURE_OPENAI_API_VERSION"],
-        chat_model_name=st.session_state["AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"],
-    )
+    if "azure_openai_manager" not in st.session_state:
+        st.session_state["azure_openai_manager"] = AzureOpenAIManager(
+            api_key=st.session_state["AZURE_OPENAI_KEY"],
+            azure_endpoint=st.session_state["AZURE_OPENAI_API_ENDPOINT"],
+            api_version=st.session_state["AZURE_OPENAI_API_VERSION"],
+            chat_model_name=st.session_state["AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID"],
+        )
+    
+    if "llm_config_gpt4o" not in st.session_state:
+        st.session_state["llm_config_gpt4o"] = {
+            "config_list": [
+                {
+                    "model": AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID,
+                    "api_type": "azure",
+                    "api_key": AZURE_OPENAI_KEY,
+                    "base_url": AZURE_OPENAI_API_ENDPOINT,
+                    "api_version": AZURE_OPENAI_API_VERSION
+                }
+            ]
+        }
+    
+    if "llm_config_dalle3" not in st.session_state:
+        st.session_state["llm_config_dalle3"] = {
+            "config_list": [
+                {
+                    "model": AZURE_AOAI_DALLE_MODEL_DEPLOYMENT_ID,
+                    "api_type": "azure",
+                    "api_key": AZURE_AOAI_KEY_VISION,
+                    "base_url": AZURE_AOAI_API_ENDPOINT_VISION,
+                    "api_version": AZURE_AOAI_API_VERSION_VISION
+                }
+            ]
+        }
 
-    st.session_state["llm_config_gpt4o"] = {
-        "config_list": [
-            {
-                "model": AZURE_AOAI_CHAT_MODEL_NAME_DEPLOYMENT_ID,
-                "api_type": "azure",
-                "api_key": AZURE_OPENAI_KEY,
-                "base_url": AZURE_OPENAI_API_ENDPOINT,
-                "api_version": AZURE_OPENAI_API_VERSION
-            }
-        ]
-    }
-
-    st.session_state["llm_config_dalle3"] = {
-        "config_list": [
-            {
-                "model": AZURE_AOAI_DALLE_MODEL_DEPLOYMENT_ID,
-                "api_type": "azure",
-                "api_key": AZURE_AOAI_KEY_VISION,
-                "base_url": AZURE_AOAI_API_ENDPOINT_VISION,
-                "api_version": AZURE_AOAI_API_VERSION_VISION
-            }
-        ]
-    }
-    st.session_state.env_vars_loaded = True
+try:
+    initialize_session_state()
+except Exception as e:
+    st.error(f"An error occurred: {str(e)}. Please check your environment variables and try again.")
 
 with st.expander("What Can I Do? 🤔", expanded=False):
     st.markdown(
