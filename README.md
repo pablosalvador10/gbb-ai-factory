@@ -6,14 +6,16 @@ The project provides an easy-to-use app built with Streamlit as the front-end fr
 
 <br>
 
-<p align="center">
-   <img src="utils/images/welcome_to_AI_Factory.png" alt="Welcome to AI Factory" style="width: 60%; border-radius: 10px;"/>
+<p align="center" style="font-family: Arial, sans-serif;">
+   <img src="utils/images/welcome_to_AI_Factory.png" alt="Welcome to AI Factory" style="width: 60%; border-radius: 10px; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);"/>
+   <br>
+   <span style="display: block; text-align: center; font-size: 20px; margin-top: 10px;"></span>
 </p>
 
 > 🚧 **Note: Work in Progress**  
 > This project is actively evolving. Your contributions and feedback are invaluable to us. Please refer to the sections below for more information on how to get involved.
 
-### DocumentoGPT
+### DocumentoGPT 🤖📄 
 
 DocumentGPT utilizes Azure AI Document Intelligence and AOAI services, including GPT-4o and Whisper models, to automate document summarization, translation, and generation, aiming to improve efficiency in content management and accessibility.
 
@@ -26,7 +28,7 @@ What can you do with DocumentoGPT ?
 - **Interactive Document Engagement**: Navigate complex documents through a chat-like interface, asking questions and receiving answers based on the document's content.
 - **Custom Document Creation**: Produce personalized documents from scratch or templates, catering to diverse needs such as reports, proposals, or research papers.
 
-### SketchGPT
+### SketchGPT 🤖🎨 
 
 SketchGPT is a multi-agent system utilizing the Autogen framework on the backend. It employs DALL·E 3 as the artist agent for generating images and GPT-4o as the evaluator or critic agent. This collaboration automates the prompt generation process, leveraging user-provided evaluations to produce high-quality images.
 

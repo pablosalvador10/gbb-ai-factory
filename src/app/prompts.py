@@ -93,32 +93,6 @@ def generate_system_message(document_type, focus_areas):
 
     system_messages = {
         "How-to Guide": """
-            You are tasked with creating a detailed, user-friendly "How-To" guide based on multiple documents and complex topics. 
-            The guide should include clear headings, subheadings, and step-by-step instructions.
-        """,
-        "Reference Manual": """
-            You are tasked with creating a comprehensive Reference Manual. 
-            The manual should include detailed information and instructions, organized by topic and easy to navigate.
-        """,
-        "API Documentation": """
-            You are tasked with creating detailed API documentation. 
-            The documentation should include clear descriptions of endpoints, request and response formats, and example usages.
-        """,
-        "Other": f"""
-            You are tasked with creating a detailed document. 
-            The type of document is {document_type}. 
-            The document should include clear headings, subheadings, and detailed instructions.
-        """,
-    }
-    return system_messages.get(document_type, "")
-
-
-def generate_system_message(document_type, focus_areas):
-    if document_type == "Other":
-        document_type = focus_areas
-
-    system_messages = {
-        "How-to Guide": """
             **Task**: You are tasked with creating a detailed a "How-To" Guide.
             **Objective**: Compile a user-friendly guide that simplifies complex processes into actionable steps. 
             **Requirements**:
