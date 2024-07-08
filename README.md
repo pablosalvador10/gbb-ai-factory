@@ -81,3 +81,7 @@ Eager to contribute to the AI Factory? Dive into our [CONTRIBUTING guide](./CONT
 **Stay Updated**
 
 Follow our journey and stay updated with the latest changes by checking our [CHANGELOG.md](./CHANGELOG.md). Your involvement is vital for our collective success and continuous evolution.
+
+### Disclaimer
+> [!IMPORTANT]
+> This software is provided for demonstration purposes only. It is not intended to be relied upon for any purpose. The creators of this software make no representations or warranties of any kind, express or implied, about the completeness, accuracy, reliability, suitability or availability with respect to the software or the information, products, services, or related graphics contained in the software for any purpose. Any reliance you place on such information is therefore strictly at your own risk.
